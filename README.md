@@ -2,6 +2,8 @@
 
 Ring of Time makes buffs, debuffs, and timed effects easier to understand at a glance. Instead of searching for and reading a timer, you can see how much time remains through a shrinking ring.
 
+![Ring of Time displaying visual countdown rings](images/ring-of-time-preview.png)
+
 ## Features
 
 - Separate draggable ring for every active skill or effect
