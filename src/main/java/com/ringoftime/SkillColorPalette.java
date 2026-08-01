@@ -1,9 +1,3 @@
-/*
- * Copyright (c) 2026, Ring of Time contributors
- * All rights reserved.
- *
- * SPDX-License-Identifier: BSD-2-Clause
- */
 package com.ringoftime;
 
 import java.awt.Color;
