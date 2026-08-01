@@ -1,0 +1,78 @@
+/*
+ * Ring of Time uses the same small Gradle setup as RuneLite's official
+ * example-plugin repository. Plugin Hub's "standard" builder replaces this
+ * file during publication, but keeping it here makes local development easy.
+ */
+plugins {
+	id 'java'
+}
+
+repositories {
+	mavenLocal()
+	maven {
+		url = 'https://repo.runelite.net'
+		content {
+			includeGroupByRegex("net\\.runelite.*")
+		}
+	}
+	mavenCentral()
+}
+
+// "latest.release" keeps local builds aligned with the current RuneLite API.
+def runeLiteVersion = 'latest.release'
+def pluginMainClass = 'com.ringoftime.RingOfTimePluginTest'
+
+dependencies {
+	// RuneLite supplies the client at runtime, so it is not bundled in the plugin.
+	compileOnly group: 'net.runelite', name: 'client', version: runeLiteVersion
+
+	// JUnit and RuneLite's launcher dependencies are only used by tests/dev mode.
+	testImplementation 'junit:junit:4.13.2'
+	testImplementation group: 'net.runelite', name: 'client', version: runeLiteVersion
+	testImplementation group: 'net.runelite', name: 'jshell', version: runeLiteVersion
+}
+
+group = 'com.ringoftime'
+version = '1.0.0'
+
+// Plugin Hub currently requires Java 11-compatible bytecode.
+tasks.withType(JavaCompile).configureEach {
+	options.encoding = 'UTF-8'
+	options.release.set(11)
+}
+
+// Launches a developer-mode RuneLite client with this external plugin loaded.
+tasks.register('run', JavaExec) {
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = pluginMainClass
+
+	jvmArgs "-ea"
+	args "--developer-mode", "--debug"
+}
+
+// Produces a self-contained developer jar; Plugin Hub uses its own standard build.
+tasks.register('shadowJar', Jar) {
+	dependsOn configurations.testRuntimeClasspath
+	manifest {
+		attributes('Main-Class': pluginMainClass, 'Multi-Release': true)
+	}
+
+	duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+	from sourceSets.main.output
+	from sourceSets.test.output
+	from {
+		configurations.testRuntimeClasspath.collect { file ->
+			file.isDirectory() ? file : zipTree(file)
+		}
+	}
+
+	exclude 'META-INF/INDEX.LIST'
+	exclude 'META-INF/*.SF'
+	exclude 'META-INF/*.DSA'
+	exclude 'META-INF/*.RSA'
+	exclude '**/module-info.class'
+
+	group = BasePlugin.BUILD_GROUP
+	archiveClassifier.set('shadow')
+	archiveFileName.set("${rootProject.name}-${project.version}-all.jar")
+}

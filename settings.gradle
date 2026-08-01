@@ -1,0 +1,2 @@
+// The project name is also used as the default Gradle artifact name.
+rootProject.name = 'ring-of-time'

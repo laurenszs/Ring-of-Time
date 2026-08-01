@@ -1,0 +1,12 @@
+# Gradle output and caches
+.gradle/
+build/
+
+# IDE files
+.idea/
+*.iml
+out/
+
+# Local operating-system files
+.DS_Store
+Thumbs.db
