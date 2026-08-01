@@ -66,9 +66,6 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 
 	}
 
-	/**
-	 * Returns the stable name RuneLite uses to store this circle's position.
-	 */
 	@Override
 	public String getName()
 	{
@@ -426,9 +423,6 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 		}
 	}
 
-	/**
-	 * Chooses familiar RuneLite item artwork for each effect circle.
-	 */
 	private static Image loadPrimaryIcon(ItemManager itemManager, Effect effect)
 	{
 		switch (effect)

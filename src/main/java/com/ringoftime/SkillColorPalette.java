@@ -9,11 +9,6 @@ package com.ringoftime;
 import java.awt.Color;
 import net.runelite.api.Skill;
 
-/**
- * Supplies an intentionally distinct themed buff color for every supported
- * skill. Keeping the palette in one pure class makes it easy to review and
- * unit-test without constructing RuneLite overlays.
- */
 final class SkillColorPalette
 {
 	private SkillColorPalette()

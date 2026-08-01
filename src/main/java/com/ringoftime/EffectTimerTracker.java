@@ -37,11 +37,6 @@ final class EffectTimerTracker
 		SUPER_ANTIFIRE
 	}
 
-	/*
-	 * RuneLite's Poison plugin uses 18.2 seconds for the interval between
-	 * poison/venom hits. Keeping the same value avoids disagreement with the
-	 * built-in health-orb and infobox presentation.
-	 */
 	static final int POISON_CYCLE_MILLIS = 18_200;
 	static final int ANTIPOISON_CYCLE_TICKS = 30;
 	static final int ANTIVENOM_CUTOFF = -38;
@@ -83,13 +78,6 @@ final class EffectTimerTracker
 		}
 	}
 
-	/**
-	 * Observes the player's poison varplayer.
-	 *
-	 * @param value current poison/venom severity; non-positive means inactive
-	 * @param currentTick current RuneLite game-tick counter
-	 * @param exactChange whether this sample came from the matching var change
-	 */
 	void observePoison(int value, int currentTick, boolean exactChange)
 	{
 		if (value <= 0)
@@ -112,11 +100,6 @@ final class EffectTimerTracker
 
 		if (!wasActive || changed)
 		{
-			/*
-			 * Any poison-var change restarts RuneLite's next-damage clock.
-			 * Samples triggered by the var event have an exact phase; a login
-			 * sample is marked estimated until the first observed change.
-			 */
 			poisonCycleStartTick = currentTick;
 			poisonEstimated = !exactChange;
 		}
@@ -146,15 +129,6 @@ final class EffectTimerTracker
 		poisonValue = value;
 	}
 
-	/**
-	 * Observes antipoison and anti-venom protection encoded as negative values
-	 * in the same poison varplayer. RuneLite advances these durations in
-	 * 30-game-tick blocks, so the countdown is anchored at each value change.
-	 *
-	 * @param value current shared poison/protection varplayer value
-	 * @param currentTick current RuneLite game-tick counter
-	 * @param exactChange whether this sample came from the matching var change
-	 */
 	void observeAntipoison(int value, int currentTick, boolean exactChange)
 	{
 		final Countdown protection = countdowns.get(Effect.ANTIPOISON);

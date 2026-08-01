@@ -269,10 +269,6 @@ public interface RingOfTimeConfig extends Config
 	)
 	String EFFECTS_SECTION = "effects";
 
-	/**
-	 * Displays non-editable guidance in the settings sidebar. A void config item
-	 * is rendered as a static label by RuneLite instead of an input control.
-	 */
 	@ConfigItem(
 		keyName = "duplicateSkillIndicatorNotice",
 		name = "<html>Boosts Information:<br>"
@@ -284,7 +280,6 @@ public interface RingOfTimeConfig extends Config
 	)
 	default void duplicateSkillIndicatorNotice()
 	{
-		// Static settings text intentionally has no editable value.
 	}
 
 	@ConfigItem(
@@ -298,7 +293,6 @@ public interface RingOfTimeConfig extends Config
 	)
 	default void duplicateEffectIndicatorNotice()
 	{
-		// Static settings text intentionally has no editable value.
 	}
 
 	@ConfigItem(

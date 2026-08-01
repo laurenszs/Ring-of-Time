@@ -63,9 +63,6 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 
 	}
 
-	/**
-	 * Gives RuneLite a stable, unique key for this skill's saved drag position.
-	 */
 	@Override
 	public String getName()
 	{
@@ -378,9 +375,6 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 		graphics.draw(nextLevelRing);
 	}
 
-	/**
-	 * Scales the RuneLite-provided skill icon into its configured slot.
-	 */
 	private void drawSkillIcon(Graphics2D graphics, Rectangle bounds)
 	{
 		final Image icon = skillIconManager.getSkillImage(skill);

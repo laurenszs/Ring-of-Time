@@ -312,9 +312,6 @@ public class RingOfTimePlugin extends Plugin
 		}
 	}
 
-	/**
-	 * Supplies the typed configuration instance through RuneLite/Guice.
-	 */
 	@Provides
 	RingOfTimeConfig provideConfig(ConfigManager configManager)
 	{
