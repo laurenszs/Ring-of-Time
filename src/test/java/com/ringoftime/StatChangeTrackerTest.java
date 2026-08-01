@@ -115,4 +115,16 @@ public class StatChangeTrackerTest
 		assertEquals(5d / 6d, tracker.getOverallProgress(Skill.STRENGTH, 50, 0d), TOLERANCE);
 		assertEquals(150, tracker.getRemainingSeconds(Skill.STRENGTH, 50, 0d, true));
 	}
+
+	@Test
+	public void fixedDurationBuffDoesNotStartOrdinaryRestoreClock()
+	{
+		tracker.observe(Skill.STRENGTH, 104, 99, 0, true);
+		tracker.onGameTick(50, false);
+
+		assertEquals(0d, tracker.getNextChangeProgress(Skill.STRENGTH, 50, 0d), TOLERANCE);
+
+		tracker.observe(Skill.STRENGTH, 104, 99, 100, false);
+		assertEquals(1d, tracker.getNextChangeProgress(Skill.STRENGTH, 100, 0d), TOLERANCE);
+	}
 }

@@ -11,6 +11,7 @@ import java.awt.Font;
 import java.awt.FontMetrics;
 import java.awt.Graphics2D;
 import java.awt.Image;
+import java.awt.Polygon;
 import java.awt.RenderingHints;
 import java.awt.Rectangle;
 import java.awt.geom.Arc2D;
@@ -30,6 +31,8 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 {
 	private static final int ARC_START_DEGREES = 90;
 	private static final int TEXT_SHADOW_OFFSET = 1;
+	private static final Color DIVINE_INDICATOR_COLOR = new Color(130, 235, 255, 245);
+	private static final Color DIVINE_INDICATOR_OUTLINE_COLOR = new Color(0, 0, 0, 210);
 
 	private final Client client;
 	private final RingOfTimePlugin plugin;
@@ -72,7 +75,9 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 	public Dimension render(Graphics2D graphics)
 	{
 		final StatChangeTracker tracker = plugin.getTracker();
+		final DivineTimerTracker divineTracker = plugin.getDivineTracker();
 		final int delta = tracker.getDelta(skill);
+		final boolean divine = divineTracker.isActive(skill);
 		if (!isTimerActive())
 		{
 			return null;
@@ -81,20 +86,23 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 		final int ringSize = config.ringSize();
 		final int currentTick = client.getTickCount();
 		final double subTickProgress = plugin.getSubTickProgress();
-		final int remainingSeconds = tracker.getRemainingSeconds(
-			skill,
-			currentTick,
-			subTickProgress,
-			plugin.isPreserveActive()
-		);
+		final long nowMillis = System.currentTimeMillis();
+		final int remainingSeconds = divine
+			? divineTracker.getRemainingSeconds(skill, nowMillis)
+			: tracker.getRemainingSeconds(
+				skill,
+				currentTick,
+				subTickProgress,
+				plugin.isPreserveActive()
+			);
 		final TimerPosition timerPosition = config.timerPosition();
 		final String timeText = !timerPosition.isShown()
 			? null
 			: formatDuration(remainingSeconds);
-		final LevelDisplay levelDisplay = delta > 0
+		final LevelDisplay levelDisplay = divine || delta > 0
 			? config.buffLevelDisplay()
 			: config.debuffLevelDisplay();
-		final PlusMinusPosition plusMinusPosition = delta > 0
+		final PlusMinusPosition plusMinusPosition = divine || delta > 0
 			? config.buffPlusMinusPosition()
 			: config.debuffPlusMinusPosition();
 		final String plusMinusText = plusMinusPosition == PlusMinusPosition.OFF
@@ -103,10 +111,12 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 				? Integer.toString(client.getBoostedSkillLevel(skill))
 				: formatDelta(delta);
 		final Font plusMinusFont = FontManager.getRunescapeBoldFont().deriveFont((float) config.plusMinusFontSize());
-		final InnerRingDisplay innerRingDisplay = delta > 0
+		final InnerRingDisplay innerRingDisplay = divine || delta > 0
 			? config.buffInnerRing()
 			: config.debuffInnerRing();
-		final boolean innerRingVisible = Math.abs(delta) > 1 && innerRingDisplay.isShown();
+		final boolean innerRingVisible = !divine
+			&& Math.abs(delta) > 1
+			&& innerRingDisplay.isShown();
 		final int thickness = Math.min(config.ringThickness(), Math.max(2, ringSize / 3));
 		final int outlineThickness = config.showRingOutline() ? config.outlineThickness() : 0;
 		final int clearCenterSize = TimerLabelLayout.getClearCenterSize(
@@ -150,9 +160,11 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 			drawTimer(
 				canvas,
 				delta,
+				divine,
 				ringSize,
 				currentTick,
 				subTickProgress,
+				nowMillis,
 				remainingSeconds,
 				timeText,
 				plusMinusText,
@@ -175,9 +187,11 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 	private void drawTimer(
 		Graphics2D graphics,
 		int delta,
+		boolean divine,
 		int size,
 		int currentTick,
 		double subTickProgress,
+		long nowMillis,
 		int remainingSeconds,
 		String timeText,
 		String plusMinusText,
@@ -186,7 +200,9 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 		TimerLabelLayout labelLayout)
 	{
 		final StatChangeTracker tracker = plugin.getTracker();
-		final double totalProgress = tracker.getOverallProgress(skill, currentTick, subTickProgress);
+		final double totalProgress = divine
+			? plugin.getDivineTracker().getProgress(skill, nowMillis)
+			: tracker.getOverallProgress(skill, currentTick, subTickProgress);
 		final int thickness = Math.min(config.ringThickness(), Math.max(2, size / 3));
 		final int outlineThickness = config.showRingOutline() ? config.outlineThickness() : 0;
 		final double edgeMargin = Math.max(1d, outlineThickness);
@@ -201,10 +217,10 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 			-360d,
 			Arc2D.OPEN
 		);
-		final Color outlineColor = delta > 0
+		final Color outlineColor = divine || delta > 0
 			? config.buffOutlineColor()
 			: config.debuffOutlineColor();
-		final Color innerRingColor = delta > 0
+		final Color innerRingColor = divine || delta > 0
 			? config.buffInnerRingColor()
 			: config.debuffInnerRingColor();
 
@@ -223,14 +239,14 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 		graphics.setColor(config.emptyRingColor());
 		graphics.draw(ring);
 
-		final Color activeColor = delta > 0
+		final Color activeColor = divine || delta > 0
 			? (config.useBaseBuffColor() ? config.buffColor() : SkillColorPalette.getColor(skill, config))
 			: config.debuffColor();
 		ring.setAngleExtent(-360d * totalProgress);
 		graphics.setColor(activeColor);
 		graphics.draw(ring);
 
-		if (delta > 0)
+		if (divine || delta > 0)
 		{
 			drawExpiryFlash(
 				graphics,
@@ -242,11 +258,15 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 				subTickProgress
 			);
 		}
+		if (divine)
+		{
+			drawDivineIndicator(graphics, size, thickness, outlineThickness);
+		}
 
-		final InnerRingDisplay innerRingDisplay = delta > 0
+		final InnerRingDisplay innerRingDisplay = divine || delta > 0
 			? config.buffInnerRing()
 			: config.debuffInnerRing();
-		if (Math.abs(delta) > 1 && innerRingDisplay.isShown())
+		if (!divine && Math.abs(delta) > 1 && innerRingDisplay.isShown())
 		{
 			drawNextLevelIndicator(
 				graphics,
@@ -260,7 +280,10 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 		}
 
 		drawSkillIcon(graphics, labelLayout.getIconBounds());
-		final Color timerTextColor = getTimerTextColor(delta, plugin.isPreserveActive());
+		final Color timerTextColor = getTimerTextColor(
+			delta,
+			plugin.isPreserveActive() && !divine
+		);
 		drawLabel(
 			graphics,
 			timeText,
@@ -269,7 +292,7 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 			timerFont,
 			false
 		);
-		final Color plusMinusColor = delta > 0
+		final Color plusMinusColor = divine || delta > 0
 			? config.buffPlusMinusColor()
 			: config.debuffPlusMinusColor();
 		drawLabel(
@@ -281,6 +304,43 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 			true
 		);
 	}
+	/**
+	 * Marks a fixed-duration divine potion with a small crystalline diamond at
+	 * the top of the ring without replacing that skill's configured color.
+	 */
+	private static void drawDivineIndicator(
+		Graphics2D graphics,
+		int size,
+		int ringThickness,
+		int outlineThickness)
+	{
+		final Polygon marker = createDivineIndicator(size, ringThickness, outlineThickness);
+		graphics.setColor(DIVINE_INDICATOR_COLOR);
+		graphics.fillPolygon(marker);
+		graphics.setStroke(new BasicStroke(1f));
+		graphics.setColor(DIVINE_INDICATOR_OUTLINE_COLOR);
+		graphics.drawPolygon(marker);
+	}
+
+	/**
+	 * Builds a compact marker centered on the outer ring's twelve-o'clock point.
+	 */
+	static Polygon createDivineIndicator(int size, int ringThickness, int outlineThickness)
+	{
+		final int halfWidth = Math.max(2, Math.min(4, (ringThickness + 1) / 2));
+		final int halfHeight = halfWidth + 1;
+		final int centerX = size / 2;
+		final int centerY = Math.max(
+			halfHeight,
+			(int) Math.round(Math.max(1d, outlineThickness) + ringThickness / 2d)
+		);
+		return new Polygon(
+			new int[]{centerX, centerX + halfWidth, centerX, centerX - halfWidth},
+			new int[]{centerY - halfHeight, centerY, centerY + halfHeight, centerY},
+			4
+		);
+	}
+
 	/**
 	 * Flashes a complete ring in its own configured color near beneficial expiry.
 	 * Game-tick time keeps the pulse deterministic and independent of frame rate.
@@ -442,7 +502,9 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 			return false;
 		}
 
-		return delta > 0 || (delta < 0 && config.debuffDisplay().showsSkills());
+		return plugin.getDivineTracker().isActive(skill)
+			|| delta > 0
+			|| (delta < 0 && config.debuffDisplay().showsSkills());
 	}
 
 	/**

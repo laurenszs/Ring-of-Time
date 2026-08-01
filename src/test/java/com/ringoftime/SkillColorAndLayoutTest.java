@@ -8,6 +8,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Point;
+import java.awt.Polygon;
 import java.awt.image.BufferedImage;
 import java.util.EnumSet;
 import java.util.HashSet;
@@ -233,6 +234,19 @@ public class SkillColorAndLayoutTest
 		assertEquals(PlusMinusPosition.TOP_RIGHT, config.buffPlusMinusPosition());
 		assertEquals(PlusMinusPosition.TOP_RIGHT, config.debuffPlusMinusPosition());
 		assertEquals(RingOfTimeConfig.TrackedSkills.ALL, config.trackedSkills());
+		assertEquals(10, config.ringGroupHorizontalSpacing());
+		assertEquals(2, config.ringGroupVerticalSpacing());
+		assertEquals(10, config.ringGroupUiPadding());
+	}
+
+	@Test
+	public void divineIndicatorIsSmallAndCenteredAtTopOfRing()
+	{
+		final Polygon marker = SkillTimerOverlay.createDivineIndicator(50, 5, 0);
+
+		assertEquals(25d, marker.getBounds2D().getCenterX(), 0.01d);
+		assertTrue(marker.getBounds().y >= 0);
+		assertTrue(marker.getBounds().height <= 8);
 	}
 
 	@Test
@@ -310,7 +324,16 @@ public class SkillColorAndLayoutTest
 		);
 	}
 	@Test
-	public void configUsesApprovedSectionAndSettingNames() throws Exception
+	public void duplicateTimersSectionStartsFolded() throws Exception
+	{
+		assertTrue(
+			RingOfTimeConfig.class.getField("DUPLICATE_TIMERS_SECTION")
+				.getAnnotation(ConfigSection.class)
+				.closedByDefault()
+		);
+	}
+
+	@Test	public void configUsesApprovedSectionAndSettingNames() throws Exception
 	{
 		assertEquals(
 			"Duplicate timers",
@@ -325,6 +348,11 @@ public class SkillColorAndLayoutTest
 		assertEquals(
 			"Ring style",
 			RingOfTimeConfig.class.getField("RING_STYLE_SECTION")
+				.getAnnotation(ConfigSection.class).name()
+		);
+		assertEquals(
+			"Ring groups",
+			RingOfTimeConfig.class.getField("RING_GROUPS_SECTION")
 				.getAnnotation(ConfigSection.class).name()
 		);
 		assertEquals(

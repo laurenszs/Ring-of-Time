@@ -211,7 +211,7 @@ public interface RingOfTimeConfig extends Config
 		name = "Duplicate timers",
 		description = "RuneLite indicators that can overlap Ring of Time.",
 		position = 0,
-		closedByDefault = false
+		closedByDefault = true
 	)
 	String DUPLICATE_TIMERS_SECTION = "duplicateTimers";
 
@@ -232,9 +232,17 @@ public interface RingOfTimeConfig extends Config
 	String RING_STYLE_SECTION = "ringStyle";
 
 	@ConfigSection(
+		name = "Ring groups",
+		description = "Spacing between rings joined into the same group.",
+		position = 3,
+		closedByDefault = false
+	)
+	String RING_GROUPS_SECTION = "ringGroups";
+
+	@ConfigSection(
 		name = "Buffs",
 		description = "Settings for levels above their base value.",
-		position = 3,
+		position = 4,
 		closedByDefault = false
 	)
 	String BUFFS_SECTION = "buffs";
@@ -242,7 +250,7 @@ public interface RingOfTimeConfig extends Config
 	@ConfigSection(
 		name = "Individual buff colors",
 		description = "Individual colors used by positive skill buffs.",
-		position = 4,
+		position = 5,
 		closedByDefault = true
 	)
 	String BUFF_COLORS_SECTION = "buffColors";
@@ -250,7 +258,7 @@ public interface RingOfTimeConfig extends Config
 	@ConfigSection(
 		name = "Debuffs",
 		description = "Skill drains plus poison and venom timers.",
-		position = 5,
+		position = 6,
 		closedByDefault = false
 	)
 	String DEBUFFS_SECTION = "debuffs";
@@ -258,7 +266,7 @@ public interface RingOfTimeConfig extends Config
 	@ConfigSection(
 		name = "Protection & effect timers",
 		description = "Antipoison, anti-venom, stamina, and antifire settings.",
-		position = 6,
+		position = 7,
 		closedByDefault = false
 	)
 	String EFFECTS_SECTION = "effects";
@@ -279,7 +287,7 @@ public interface RingOfTimeConfig extends Config
 	@ConfigItem(
 		keyName = "duplicateEffectIndicatorNotice",
 		name = "<html>Timers & Buffs:<br>"
-			+ "- Disable Antipoison, Stamina, and Antifire<br>"
+			+ "- Disable Antipoison, Stamina, Antifire, and Divine potion<br>"
 			+ "- Poison: disable Show infoboxes</html>",
 		description = "Informational only; Ring of Time does not change other plugin settings.",
 		position = 1,
@@ -1075,6 +1083,45 @@ public interface RingOfTimeConfig extends Config
 	default Color emptyRingColor()
 	{
 		return new Color(20, 20, 20, 165);
+	}
+
+	@Range(min = 0, max = 20)
+	@ConfigItem(
+		keyName = "ringGroupHorizontalSpacing",
+		name = "Horizontal spacing",
+		description = "Horizontal gap in pixels between rings in the same group.",
+		position = 0,
+		section = RING_GROUPS_SECTION
+	)
+	default int ringGroupHorizontalSpacing()
+	{
+		return 10;
+	}
+
+	@Range(min = 0, max = 20)
+	@ConfigItem(
+		keyName = "ringGroupVerticalSpacing",
+		name = "Vertical spacing",
+		description = "Vertical gap in pixels between rings in the same group.",
+		position = 1,
+		section = RING_GROUPS_SECTION
+	)
+	default int ringGroupVerticalSpacing()
+	{
+		return 2;
+	}
+
+	@Range(min = 0, max = 30)
+	@ConfigItem(
+		keyName = "ringGroupUiPadding",
+		name = "UI padding",
+		description = "Transparent space around each group to separate its rings from nearby UI components.",
+		position = 2,
+		section = RING_GROUPS_SECTION
+	)
+	default int ringGroupUiPadding()
+	{
+		return 10;
 	}
 
 	@Alpha

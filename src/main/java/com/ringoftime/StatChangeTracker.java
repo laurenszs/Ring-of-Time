@@ -28,6 +28,7 @@ final class StatChangeTracker
 
 	private final int[] lastDeltas = new int[Skill.values().length];
 	private final int[] peakMagnitudes = new int[Skill.values().length];
+	private final boolean[] fixedDurationBuffs = new boolean[Skill.values().length];
 	private final EnumSet<Skill> activeSkills = EnumSet.noneOf(Skill.class);
 	private final Set<Skill> readOnlyActiveSkills = Collections.unmodifiableSet(activeSkills);
 	private final CycleTimer buffCycle = new CycleTimer(true);
@@ -45,6 +46,7 @@ final class StatChangeTracker
 	{
 		Arrays.fill(lastDeltas, UNKNOWN_DELTA);
 		Arrays.fill(peakMagnitudes, 0);
+		Arrays.fill(fixedDurationBuffs, false);
 		activeSkills.clear();
 		buffCycle.stop();
 		debuffCycle.stop();
@@ -60,15 +62,31 @@ final class StatChangeTracker
 	 */
 	void observe(Skill skill, int boostedLevel, int realLevel, int currentTick)
 	{
+		observe(skill, boostedLevel, realLevel, currentTick, false);
+	}
+
+	/**
+	 * Observes a skill while excluding fixed-duration divine boosts from the
+	 * ordinary shared stat-restoration clock.
+	 */
+	void observe(
+		Skill skill,
+		int boostedLevel,
+		int realLevel,
+		int currentTick,
+		boolean fixedDurationBuff)
+	{
 		final int index = skill.ordinal();
 		final int previousDelta = lastDeltas[index];
+		final boolean wasFixedDuration = fixedDurationBuffs[index];
 		final int delta = boostedLevel - realLevel;
 
 		/*
 		 * A one-level move toward zero is the normal restoration event. It
 		 * provides an exact anchor for the appropriate shared stat clock.
 		 */
-		if (previousDelta > 0 && delta == previousDelta - 1)
+		if (!wasFixedDuration && !fixedDurationBuff
+			&& previousDelta > 0 && delta == previousDelta - 1)
 		{
 			buffCycle.synchronize(currentTick);
 		}
@@ -108,9 +126,13 @@ final class StatChangeTracker
 			 * The first cycle is estimated because the server does not expose
 			 * its current stat-clock phase. A natural restoration later syncs it.
 			 */
-			cycleFor(delta).startEstimatedIfStopped(currentTick);
+			if (delta < 0 || !fixedDurationBuff)
+			{
+				cycleFor(delta).startEstimatedIfStopped(currentTick);
+			}
 		}
 
+		fixedDurationBuffs[index] = fixedDurationBuff && delta > 0;
 		lastDeltas[index] = delta;
 
 		// Do not carry an obsolete clock into a future, unrelated effect.
@@ -261,7 +283,8 @@ final class StatChangeTracker
 		for (Skill skill : activeSkills)
 		{
 			final int delta = getDelta(skill);
-			if ((buff && delta > 0) || (!buff && delta < 0))
+			if ((buff && delta > 0 && !fixedDurationBuffs[skill.ordinal()])
+				|| (!buff && delta < 0))
 			{
 				return true;
 			}

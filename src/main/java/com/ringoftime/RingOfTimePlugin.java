@@ -4,9 +4,11 @@ import com.google.inject.Provides;
 import com.ringoftime.EffectTimerTracker.Effect;
 import java.awt.Dimension;
 import java.awt.Point;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
@@ -25,6 +27,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.OverlayMenuClicked;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SkillIconManager;
 import net.runelite.client.plugins.Plugin;
@@ -34,16 +37,16 @@ import net.runelite.client.ui.overlay.OverlayManager;
 /**
  * Connects RuneLite events and client state to the timer models and overlays.
  *
- * <p>Every supported skill and non-skill effect receives its own uniquely named
- * overlay instance. RuneLite therefore stores and restores every circle's drag
- * position independently instead of treating active timers as one component.</p>
+	 * <p>Each timer remains an independent renderable entity. Resizable group
+	 * overlays provide optional wrapping while retaining stable names for saved
+	 * positions and detached rings.</p>
  */
 @PluginDescriptor(
 	name = "Ring of Time",
 	description = "Displays shrinking annular timers for skill changes and timed effects",
 	tags = {
 		"timer", "visual", "boost", "buff", "debuff", "poison",
-		"venom", "antipoison", "stamina", "antifire", "overlay"
+		"venom", "antipoison", "stamina", "antifire", "divine", "overlay"
 	}
 )
 public class RingOfTimePlugin extends Plugin
@@ -100,6 +103,9 @@ public class RingOfTimePlugin extends Plugin
 	private RingOfTimeConfig config;
 
 	@Inject
+	private ConfigManager configManager;
+
+	@Inject
 	private SkillIconManager skillIconManager;
 
 	@Inject
@@ -109,9 +115,11 @@ public class RingOfTimePlugin extends Plugin
 	private ClientThread clientThread;
 
 	private final StatChangeTracker tracker = new StatChangeTracker();
+	private final DivineTimerTracker divineTracker = new DivineTimerTracker();
 	private final EffectTimerTracker effectTracker = new EffectTimerTracker();
 	private final Map<Skill, SkillTimerOverlay> skillOverlays = new EnumMap<>(Skill.class);
 	private final Map<Effect, EffectTimerOverlay> effectOverlays = new EnumMap<>(Effect.class);
+	private TimerGroupManager groupManager;
 	private long lastGameTickMillis;
 
 	/**
@@ -121,6 +129,7 @@ public class RingOfTimePlugin extends Plugin
 	protected void startUp()
 	{
 		tracker.reset();
+		divineTracker.reset();
 		effectTracker.reset();
 
 		for (Skill skill : TRACKABLE_SKILLS)
@@ -133,8 +142,6 @@ public class RingOfTimePlugin extends Plugin
 				skill
 			);
 			skillOverlays.put(skill, overlay);
-			overlayManager.add(overlay);
-			overlay.initializeAutomaticLayout();
 		}
 
 		for (Effect effect : Effect.values())
@@ -147,9 +154,19 @@ public class RingOfTimePlugin extends Plugin
 				effect
 			);
 			effectOverlays.put(effect, overlay);
-			overlayManager.add(overlay);
-			overlay.initializeAutomaticLayout();
 		}
+
+		final List<TimerCircleOverlay> timers = new ArrayList<>();
+		timers.addAll(skillOverlays.values());
+		timers.addAll(effectOverlays.values());
+		groupManager = new TimerGroupManager(
+			client,
+			this,
+			config,
+			overlayManager,
+			configManager
+		);
+		groupManager.start(timers);
 
 		/*
 		 * The settings-panel toggle starts plugins on Swing's event thread.
@@ -160,6 +177,7 @@ public class RingOfTimePlugin extends Plugin
 		{
 			if (!skillOverlays.isEmpty() && client.getGameState() == GameState.LOGGED_IN)
 			{
+				observeDivineState();
 				observeAllSkills();
 				observeEffectState(false);
 				layoutActiveOverlays();
@@ -173,19 +191,17 @@ public class RingOfTimePlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
-		for (SkillTimerOverlay overlay : skillOverlays.values())
+		if (groupManager != null)
 		{
-			overlayManager.remove(overlay);
+			groupManager.shutDown();
+			groupManager = null;
 		}
-		skillOverlays.clear();
 
-		for (EffectTimerOverlay overlay : effectOverlays.values())
-		{
-			overlayManager.remove(overlay);
-		}
+		skillOverlays.clear();
 		effectOverlays.clear();
 
 		tracker.reset();
+		divineTracker.reset();
 		effectTracker.reset();
 		lastGameTickMillis = 0L;
 	}
@@ -202,11 +218,13 @@ public class RingOfTimePlugin extends Plugin
 			return;
 		}
 
+		observeDivineState();
 		tracker.observe(
 			skill,
 			client.getBoostedSkillLevel(skill),
 			client.getRealSkillLevel(skill),
-			client.getTickCount()
+			client.getTickCount(),
+			divineTracker.isActive(skill)
 		);
 		layoutActiveOverlays();
 	}
@@ -244,6 +262,11 @@ public class RingOfTimePlugin extends Plugin
 			relevantEffectChanged = true;
 		}
 
+		if (isDivineVarbit(event.getVarbitId()))
+		{
+			observeDivineState();
+			relevantEffectChanged = true;
+		}
 		if (relevantEffectChanged)
 		{
 			layoutActiveOverlays();
@@ -260,6 +283,7 @@ public class RingOfTimePlugin extends Plugin
 		 * Sampling state is inexpensive and makes the model resilient if another
 		 * plugin or a login transition hides an individual change event.
 		 */
+		observeDivineState();
 		observeAllSkills();
 		observeEffectState(false);
 		tracker.onGameTick(client.getTickCount(), client.getVarbitValue(Prayer.PRESERVE.getVarbit()) == 1);
@@ -280,8 +304,10 @@ public class RingOfTimePlugin extends Plugin
 				tracker.reset();
 				effectTracker.reset();
 				lastGameTickMillis = 0L;
+				divineTracker.reset();
 				break;
 			case LOGGED_IN:
+				observeDivineState();
 				observeAllSkills();
 				observeEffectState(false);
 				lastGameTickMillis = System.currentTimeMillis();
@@ -306,6 +332,19 @@ public class RingOfTimePlugin extends Plugin
 		}
 	}
 
+	@Subscribe
+	public void onOverlayMenuClicked(OverlayMenuClicked event)
+	{
+		if (groupManager != null && event.getOverlay() instanceof TimerGroupOverlay)
+		{
+			groupManager.handleMenu(
+				(TimerGroupOverlay) event.getOverlay(),
+				event.getEntry().getOption()
+			);
+		}
+	}
+
+
 	@Provides
 	RingOfTimeConfig provideConfig(ConfigManager configManager)
 	{
@@ -324,9 +363,44 @@ public class RingOfTimePlugin extends Plugin
 				skill,
 				client.getBoostedSkillLevel(skill),
 				client.getRealSkillLevel(skill),
-				currentTick
+				currentTick,
+				divineTracker.isActive(skill)
 			);
 		}
+	}
+
+	/**
+	 * Samples the exact remaining ticks for individual and combination divine
+	 * potions. Moonlight is included only to avoid treating its shared Defence
+	 * variable as a divine effect.
+	 */
+	private void observeDivineState()
+	{
+		divineTracker.observe(
+			client.getVarbitValue(VarbitID.DIVINEATTACK_POTION_TIME),
+			client.getVarbitValue(VarbitID.DIVINESTRENGTH_POTION_TIME),
+			client.getVarbitValue(VarbitID.DIVINEDEFENCE_POTION_TIME),
+			client.getVarbitValue(VarbitID.DIVINERANGE_POTION_TIME),
+			client.getVarbitValue(VarbitID.DIVINEMAGIC_POTION_TIME),
+			client.getVarbitValue(VarbitID.DIVINECOMBAT_POTION_TIME),
+			client.getVarbitValue(VarbitID.DIVINEBASTION_POTION_TIME),
+			client.getVarbitValue(VarbitID.DIVINEBATTLEMAGE_POTION_TIME),
+			client.getVarbitValue(VarbitID.MOONLIGHT_POTION_TIME),
+			System.currentTimeMillis()
+		);
+	}
+
+	private static boolean isDivineVarbit(int varbitId)
+	{
+		return varbitId == VarbitID.DIVINEATTACK_POTION_TIME
+			|| varbitId == VarbitID.DIVINESTRENGTH_POTION_TIME
+			|| varbitId == VarbitID.DIVINEDEFENCE_POTION_TIME
+			|| varbitId == VarbitID.DIVINERANGE_POTION_TIME
+			|| varbitId == VarbitID.DIVINEMAGIC_POTION_TIME
+			|| varbitId == VarbitID.DIVINECOMBAT_POTION_TIME
+			|| varbitId == VarbitID.DIVINEBASTION_POTION_TIME
+			|| varbitId == VarbitID.DIVINEBATTLEMAGE_POTION_TIME
+			|| varbitId == VarbitID.MOONLIGHT_POTION_TIME;
 	}
 
 	/**
@@ -374,38 +448,36 @@ public class RingOfTimePlugin extends Plugin
 	 */
 	private void layoutActiveOverlays()
 	{
-		int activeIndex = 0;
-		final Dimension maximumCircleSize = TimerLabelLayout.estimateMaximumDimension(config);
-
-		for (Skill skill : TRACKABLE_SKILLS)
+		if (groupManager == null)
 		{
-			final SkillTimerOverlay overlay = skillOverlays.get(skill);
-			if (overlay != null && overlay.isTimerActive())
+			return;
+		}
+
+		final Dimension maximumCircleSize = TimerLabelLayout.estimateMaximumDimension(config);
+		int maximumGroupHeight = maximumCircleSize.height;
+		for (TimerGroupOverlay group : groupManager.getGroups())
+		{
+			if (group.isTimerActive())
 			{
-				final Point location = TimerCircleLayout.getLocation(
-					activeIndex,
-					maximumCircleSize.height
+				maximumGroupHeight = Math.max(
+					maximumGroupHeight,
+					group.estimateAutomaticHeight(maximumCircleSize)
 				);
-				if (overlay.applyAutomaticLocation(location))
-				{
-					activeIndex++;
-				}
 			}
 		}
 
-		for (Effect effect : Effect.values())
+		int activeIndex = 0;
+		for (TimerGroupOverlay group : groupManager.getGroups())
 		{
-			final EffectTimerOverlay overlay = effectOverlays.get(effect);
-			if (overlay != null && overlay.isTimerActive())
+			if (!group.isTimerActive())
 			{
-				final Point location = TimerCircleLayout.getLocation(
-					activeIndex,
-					maximumCircleSize.height
-				);
-				if (overlay.applyAutomaticLocation(location))
-				{
-					activeIndex++;
-				}
+				continue;
+			}
+
+			final Point location = TimerCircleLayout.getLocation(activeIndex, maximumGroupHeight);
+			if (group.applyAutomaticLocation(location))
+			{
+				activeIndex++;
 			}
 		}
 	}
@@ -416,6 +488,14 @@ public class RingOfTimePlugin extends Plugin
 	StatChangeTracker getTracker()
 	{
 		return tracker;
+	}
+
+	/**
+	 * Returns the fixed-duration tracker used by divine skill rings.
+	 */
+	DivineTimerTracker getDivineTracker()
+	{
+		return divineTracker;
 	}
 
 	/**

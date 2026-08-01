@@ -6,7 +6,8 @@ Ring of Time makes buffs, debuffs, and timed effects easier to understand at a g
 
 ## Features
 
-- Separate draggable ring for every active skill or effect
+- Separate ring for every active skill or effect
+- Stack rings into resizable groups with adjustable spacing and padding
 - Outer ring shows the total remaining duration
 - Optional inner ring shows the next one-level decay or recovery
 - Configurable ring size, thickness, outlines, colors, and labels
@@ -25,8 +26,8 @@ Ring of Time tracks ordinary one-level buff decay and debuff recovery for:
 - Thieving, Cooking, Crafting, Firemaking, and Fletching
 - Woodcutting, Runecraft, Slayer, Farming, and Construction
 - Hunter and Sailing
-
-This includes most ordinary potions, spicy stews, Saradomin brews, Dragon battleaxe changes, and stat-draining attacks.
+- Most ordinary potions, spicy stews, Saradomin brews, Dragon battleaxe changes, and stat-draining attacks
+- Divine super attack, strength, defence, combat, ranging, magic, bastion, and battlemage potions
 
 ## Supported effects
 
