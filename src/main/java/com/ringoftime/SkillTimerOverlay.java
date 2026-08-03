@@ -63,7 +63,7 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 	@Override
 	public String getName()
 	{
-		return "Ring of Time: " + skill.getName();
+		return persistentName(skill.getName());
 	}
 
 	/**

@@ -1,9 +1,11 @@
 package com.ringoftime;
 
+import com.ringoftime.EffectTimerTracker.Effect;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Point;
 import java.awt.image.BufferedImage;
+import net.runelite.api.Skill;
 import net.runelite.client.ui.overlay.components.ComponentOrientation;
 import org.junit.Test;
 
@@ -78,6 +80,35 @@ public class TimerGroupOverlayTest
 		assertTrue(group.applyAutomaticLocation(new Point(10, 10)));
 		group.setPreferredSize(new Dimension(100, 100));
 		assertFalse(group.applyAutomaticLocation(new Point(10, 80)));
+	}
+
+	@Test
+	public void overlayNamesAreSafeForRuneLiteConfigurationKeys()
+	{
+		for (Skill skill : Skill.values())
+		{
+			final SkillTimerOverlay overlay = new SkillTimerOverlay(
+				null,
+				null,
+				null,
+				null,
+				skill
+			);
+			assertConfigurationSafe(overlay.getName());
+		}
+
+		for (Effect effect : Effect.values())
+		{
+			assertConfigurationSafe(EffectTimerOverlay.getOverlayName(effect));
+		}
+
+		assertConfigurationSafe(TimerCircleOverlay.persistentName("Group example"));
+	}
+
+	private static void assertConfigurationSafe(String name)
+	{
+		assertFalse(name.startsWith("$"));
+		assertFalse(name.contains(":"));
 	}
 
 	private static final class FakeTimer extends TimerCircleOverlay

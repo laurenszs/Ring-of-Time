@@ -63,20 +63,25 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 	@Override
 	public String getName()
 	{
+		return getOverlayName(effect);
+	}
+
+	static String getOverlayName(Effect effect)
+	{
 		switch (effect)
 		{
 			case TOXIN:
-				return "Ring of Time: Poison and Venom";
+				return persistentName("Poison and Venom");
 			case ANTIPOISON:
-				return "Ring of Time: Antipoison Protection";
+				return persistentName("Antipoison Protection");
 			case STAMINA:
-				return "Ring of Time: Stamina";
+				return persistentName("Stamina");
 			case ANTIFIRE:
-				return "Ring of Time: Antifire";
+				return persistentName("Antifire");
 			case SUPER_ANTIFIRE:
-				return "Ring of Time: Super Antifire";
+				return persistentName("Super Antifire");
 			default:
-				return "Ring of Time: Effect";
+				return persistentName("Effect");
 		}
 	}
 

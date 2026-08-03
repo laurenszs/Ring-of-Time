@@ -121,7 +121,7 @@ final class TimerGroupManager
 
 		source.markManaged();
 		final String groupName = groups.containsKey(timer.getName())
-			? "Ring of Time: Group " + UUID.randomUUID()
+			? TimerCircleOverlay.persistentName("Group " + UUID.randomUUID())
 			: timer.getName();
 		final TimerGroupOverlay detached = createGroup(groupName);
 

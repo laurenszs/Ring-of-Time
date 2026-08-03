@@ -9,9 +9,16 @@ import net.runelite.client.ui.overlay.Overlay;
  */
 abstract class TimerCircleOverlay extends Overlay
 {
+	private static final String PERSISTENT_NAME_PREFIX = "Ring of Time - ";
+
 	TimerCircleOverlay(Plugin plugin)
 	{
 		super(plugin);
+	}
+
+	static String persistentName(String label)
+	{
+		return PERSISTENT_NAME_PREFIX + label.replace(':', '-');
 	}
 
 	/**
