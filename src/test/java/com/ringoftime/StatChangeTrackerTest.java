@@ -106,6 +106,20 @@ public class StatChangeTrackerTest
 	}
 
 	@Test
+	public void buffCrossingBelowBaseStartsAFreshDebuffVisual()
+	{
+		tracker.observe(Skill.DEFENCE, 104, 99, 0, true);
+		tracker.observe(Skill.DEFENCE, 99, 99, 20, true);
+		assertFalse(tracker.getActiveSkills().contains(Skill.DEFENCE));
+
+		tracker.observe(Skill.DEFENCE, 97, 99, 21, true);
+		assertTrue(tracker.getActiveSkills().contains(Skill.DEFENCE));
+		assertEquals(-2, tracker.getDelta(Skill.DEFENCE));
+		assertEquals(1d, tracker.getOverallProgress(Skill.DEFENCE, 21, 0d), TOLERANCE);
+		assertEquals(120, tracker.getRemainingSeconds(Skill.DEFENCE, 21, 0d, false));
+	}
+
+	@Test
 	public void preserveExtendsTheCurrentAndProjectedBuffCycles()
 	{
 		tracker.observe(Skill.STRENGTH, 101, 99, 0);
