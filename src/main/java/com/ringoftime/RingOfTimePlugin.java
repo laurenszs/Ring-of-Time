@@ -292,6 +292,12 @@ public class RingOfTimePlugin extends Plugin
 			relevantEffectChanged = true;
 		}
 
+		if (event.getVarbitId() == VarbitID.PRAYER_REGENERATION_POTION_TIMER)
+		{
+			effectTracker.observePrayerRegeneration(event.getValue(), currentTick, true);
+			relevantEffectChanged = true;
+		}
+
 		if (event.getVarbitId() == VarbitID.STAMINA_ACTIVE
 			|| event.getVarbitId() == VarbitID.STAMINA_DURATION)
 		{
@@ -457,6 +463,7 @@ public class RingOfTimePlugin extends Plugin
 		effectTracker.observePoison(poisonState, currentTick, exactChange);
 		effectTracker.observeAntipoison(poisonState, currentTick, exactChange);
 		observeStamina(currentTick, exactChange);
+		observePrayerRegeneration(currentTick, exactChange);
 		observeAntifire(currentTick, exactChange);
 	}
 
@@ -468,6 +475,15 @@ public class RingOfTimePlugin extends Plugin
 		effectTracker.observeStamina(
 			client.getVarbitValue(VarbitID.STAMINA_DURATION),
 			client.getVarbitValue(VarbitID.STAMINA_ACTIVE) == 1,
+			currentTick,
+			exactChange
+		);
+	}
+
+	private void observePrayerRegeneration(int currentTick, boolean exactChange)
+	{
+		effectTracker.observePrayerRegeneration(
+			client.getVarbitValue(VarbitID.PRAYER_REGENERATION_POTION_TIMER),
 			currentTick,
 			exactChange
 		);

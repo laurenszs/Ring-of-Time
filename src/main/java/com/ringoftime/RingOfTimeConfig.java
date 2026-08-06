@@ -265,7 +265,7 @@ public interface RingOfTimeConfig extends Config
 
 	@ConfigSection(
 		name = "Protection & effect timers",
-		description = "Antipoison, anti-venom, stamina, antifire, and thrall settings.",
+		description = "Antipoison, stamina, antifire, prayer regeneration, and thrall settings.",
 		position = 7,
 		closedByDefault = false
 	)
@@ -996,10 +996,35 @@ public interface RingOfTimeConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "showPrayerRegeneration",
+		name = "Prayer regeneration",
+		description = "Show the remaining prayer-regeneration potion duration.",
+		position = 7,
+		section = EFFECTS_SECTION
+	)
+	default boolean showPrayerRegeneration()
+	{
+		return true;
+	}
+
+	@Alpha
+	@ConfigItem(
+		keyName = "prayerRegenerationColor",
+		name = "Prayer regeneration color",
+		description = "Pale blue color used for prayer-regeneration potions.",
+		position = 8,
+		section = EFFECTS_SECTION
+	)
+	default Color prayerRegenerationColor()
+	{
+		return new Color(112, 200, 235, 255);
+	}
+
+	@ConfigItem(
 		keyName = "showThrall",
 		name = "Thrall",
 		description = "Show the remaining duration of your summoned thrall.",
-		position = 7,
+		position = 9,
 		section = EFFECTS_SECTION
 	)
 	default boolean showThrall()
@@ -1012,7 +1037,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "thrallColor",
 		name = "Thrall color",
 		description = "Color used for the summoned-thrall timer.",
-		position = 8,
+		position = 10,
 		section = EFFECTS_SECTION
 	)
 	default Color thrallColor()
@@ -1026,7 +1051,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "thrallFlashColor",
 		name = "Thrall flash color",
 		description = "Color used when the thrall timer flashes near expiry.",
-		position = 9,
+		position = 11,
 		section = EFFECTS_SECTION
 	)
 	default Color thrallFlashColor()
@@ -1038,8 +1063,8 @@ public interface RingOfTimeConfig extends Config
 	@ConfigItem(
 		keyName = "effectOutlineColor",
 		name = "Outline color",
-		description = "Yellow outline used by protection, stamina, antifire, and thrall circles.",
-		position = 10,
+		description = "Yellow outline used by protection, stamina, antifire, prayer regeneration, and thrall circles.",
+		position = 12,
 		section = EFFECTS_SECTION
 	)
 	default Color effectOutlineColor()

@@ -237,6 +237,8 @@ public class SkillColorAndLayoutTest
 		assertEquals(10, config.ringGroupHorizontalSpacing());
 		assertEquals(2, config.ringGroupVerticalSpacing());
 		assertEquals(10, config.ringGroupUiPadding());
+		assertTrue(config.showPrayerRegeneration());
+		assertEquals(new Color(112, 200, 235, 255), config.prayerRegenerationColor());
 		assertTrue(config.showThrall());
 		assertEquals(new Color(137, 127, 224, 255), config.thrallColor());
 		assertEquals(new Color(238, 74, 74, 255), config.thrallFlashColor());
@@ -386,6 +388,8 @@ public class SkillColorAndLayoutTest
 		assertConfigItemName("emptyRingColor", "Ring background color");
 		assertConfigItemName("outlineThickness", "Ring outline thickness");
 		assertConfigItemName("poisonInnerRing", "Next poison-hit ring");
+		assertConfigItemName("showPrayerRegeneration", "Prayer regeneration");
+		assertConfigItemName("prayerRegenerationColor", "Prayer regeneration color");
 		assertConfigItemName("showThrall", "Thrall");
 		assertConfigItemName("thrallColor", "Thrall color");
 		assertConfigItemName("thrallFlashColor", "Thrall flash color");

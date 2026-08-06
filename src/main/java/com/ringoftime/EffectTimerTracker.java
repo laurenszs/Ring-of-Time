@@ -29,6 +29,7 @@ final class EffectTimerTracker
 		STAMINA,
 		ANTIFIRE,
 		SUPER_ANTIFIRE,
+		PRAYER_REGENERATION,
 		THRALL
 	}
 
@@ -38,6 +39,7 @@ final class EffectTimerTracker
 	static final int VENOM_THRESHOLD = 1_000_000;
 	static final int VENOM_MAX_DAMAGE = 20;
 	static final int STAMINA_UNIT_TICKS = 10;
+	static final int PRAYER_REGENERATION_UNIT_TICKS = 12;
 	static final int ANTIFIRE_UNIT_TICKS = 30;
 	static final int SUPER_ANTIFIRE_UNIT_TICKS = 20;
 	static final int THRALL_COOLDOWN_TICKS = 17;
@@ -54,6 +56,7 @@ final class EffectTimerTracker
 	{
 		countdowns.put(Effect.ANTIPOISON, new Countdown(1));
 		countdowns.put(Effect.STAMINA, new Countdown(STAMINA_UNIT_TICKS));
+		countdowns.put(Effect.PRAYER_REGENERATION, new Countdown(PRAYER_REGENERATION_UNIT_TICKS));
 		countdowns.put(Effect.ANTIFIRE, new Countdown(ANTIFIRE_UNIT_TICKS));
 		countdowns.put(Effect.SUPER_ANTIFIRE, new Countdown(SUPER_ANTIFIRE_UNIT_TICKS));
 		countdowns.put(Effect.THRALL, new Countdown(1));
@@ -173,6 +176,22 @@ final class EffectTimerTracker
 			currentTick,
 			exactChange
 		);
+	}
+
+	void observePrayerRegeneration(int durationUnits, int currentTick, boolean exactChange)
+	{
+		countdowns.get(Effect.PRAYER_REGENERATION).observe(
+			durationUnits,
+			durationUnits > 0,
+			currentTick,
+			exactChange
+		);
+	}
+
+	double getPrayerRegenerationCycleProgress(int currentTick, double subTickProgress)
+	{
+		return countdowns.get(Effect.PRAYER_REGENERATION)
+			.getUnitProgress(currentTick, subTickProgress);
 	}
 
 	/**
@@ -437,6 +456,20 @@ final class EffectTimerTracker
 				return 0d;
 			}
 			return clamp(getRemainingTicks(currentTick, subTickProgress) / totalTicks);
+		}
+
+		private double getUnitProgress(int currentTick, double subTickProgress)
+		{
+			if (!isActive())
+			{
+				return 0d;
+			}
+
+			final double elapsed = Math.max(
+				0d,
+				currentTick - anchorTick + clamp(subTickProgress)
+			);
+			return clamp(1d - elapsed / ticksPerUnit);
 		}
 
 		private double getRemainingTicks(int currentTick, double subTickProgress)

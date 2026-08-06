@@ -121,6 +121,31 @@ public class EffectTimerTrackerTest
 	}
 
 	@Test
+	public void prayerRegenerationUsesTwelveTickUnitsAndShowsNextRestore()
+	{
+		tracker.observePrayerRegeneration(40, 100, true);
+
+		assertTrue(tracker.isActive(Effect.PRAYER_REGENERATION));
+		assertEquals(288, tracker.getRemainingSeconds(Effect.PRAYER_REGENERATION, 100, 0d));
+		assertEquals(1d, tracker.getPrayerRegenerationCycleProgress(100, 0d), TOLERANCE);
+		assertEquals(0.5d, tracker.getPrayerRegenerationCycleProgress(106, 0d), TOLERANCE);
+
+		tracker.observePrayerRegeneration(39, 112, true);
+		assertEquals(39d / 40d, tracker.getOverallProgress(
+			Effect.PRAYER_REGENERATION,
+			112,
+			0d
+		), TOLERANCE);
+		assertEquals(1d, tracker.getPrayerRegenerationCycleProgress(112, 0d), TOLERANCE);
+
+		tracker.observePrayerRegeneration(50, 120, true);
+		assertEquals(1d, tracker.getOverallProgress(Effect.PRAYER_REGENERATION, 120, 0d), TOLERANCE);
+		assertEquals(360, tracker.getRemainingSeconds(Effect.PRAYER_REGENERATION, 120, 0d));
+
+		tracker.observePrayerRegeneration(0, 121, true);
+		assertFalse(tracker.isActive(Effect.PRAYER_REGENERATION));
+	}
+	@Test
 	public void thrallDurationUsesBoostedMagicAndMasterTier()
 	{
 		tracker.observeThrallCooldown(true, 96);

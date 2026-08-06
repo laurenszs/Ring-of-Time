@@ -92,6 +92,8 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 				return persistentName("Antifire");
 			case SUPER_ANTIFIRE:
 				return persistentName("Super Antifire");
+			case PRAYER_REGENERATION:
+				return persistentName("Prayer Regeneration");
 			case THRALL:
 				return persistentName("Thrall");
 			default:
@@ -135,7 +137,10 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 			&& config.poisonInnerRing().isShown();
 		final boolean thrallCooldownVisible = effect == Effect.THRALL
 			&& tracker.isThrallCooldownActive();
-		final boolean innerRingVisible = poisonInnerRingVisible || thrallCooldownVisible;
+		final boolean prayerRegenerationCycleVisible = effect == Effect.PRAYER_REGENERATION;
+		final boolean innerRingVisible = poisonInnerRingVisible
+			|| thrallCooldownVisible
+			|| prayerRegenerationCycleVisible;
 		final int thickness = Math.min(config.ringThickness(), Math.max(2, size / 3));
 		final int outlineThickness = config.showRingOutline() ? config.outlineThickness() : 0;
 		final int clearCenterSize = TimerLabelLayout.getClearCenterSize(
@@ -294,6 +299,18 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 				config.effectOutlineColor()
 			);
 		}
+		else if (effect == Effect.PRAYER_REGENERATION)
+		{
+			drawInnerRing(
+				graphics,
+				size,
+				thickness,
+				outlineThickness,
+				tracker.getPrayerRegenerationCycleProgress(currentTick, subTickProgress),
+				config.buffInnerRingColor(),
+				config.effectOutlineColor()
+			);
+		}
 
 		final boolean alternateProtectionIcon = effect == Effect.ANTIPOISON
 			&& tracker.isAntivenomProtection();
@@ -422,6 +439,8 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 			case ANTIFIRE:
 			case SUPER_ANTIFIRE:
 				return config.antifireColor();
+			case PRAYER_REGENERATION:
+				return config.prayerRegenerationColor();
 			case THRALL:
 				return config.thrallColor();
 			default:
@@ -455,6 +474,8 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 			case ANTIFIRE:
 			case SUPER_ANTIFIRE:
 				return config.showAntifire();
+			case PRAYER_REGENERATION:
+				return config.showPrayerRegeneration();
 			case THRALL:
 				return config.showThrall();
 			default:
@@ -481,6 +502,8 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 				return itemManager.getImage(ItemID._4DOSE1ANTIDRAGON);
 			case SUPER_ANTIFIRE:
 				return itemManager.getImage(ItemID._4DOSE3ANTIDRAGON);
+			case PRAYER_REGENERATION:
+				return itemManager.getImage(ItemID._4DOSE1PRAYER_REGENERATION);
 			default:
 				return null;
 		}

@@ -36,6 +36,7 @@ Ring of Time tracks ordinary one-level buff decay and debuff recovery for:
 - Antipoison protection
 - Anti-venom protection
 - Stamina
+- Prayer regeneration potions
 - Regular and extended antifire
 - Super and extended-super antifire
 - Summoned thralls with an inner resurrection-cooldown ring
