@@ -77,7 +77,7 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 		final StatChangeTracker tracker = plugin.getTracker();
 		final DivineTimerTracker divineTracker = plugin.getDivineTracker();
 		final int delta = tracker.getDelta(skill);
-		final boolean divine = divineTracker.isActive(skill);
+		final boolean divine = isPositiveDivineBuff(delta, divineTracker.isActive(skill));
 		if (!isTimerActive())
 		{
 			return null;
@@ -502,9 +502,13 @@ final class SkillTimerOverlay extends TimerCircleOverlay
 			return false;
 		}
 
-		return plugin.getDivineTracker().isActive(skill)
-			|| delta > 0
+		return delta > 0
 			|| (delta < 0 && config.debuffDisplay().showsSkills());
+	}
+
+	static boolean isPositiveDivineBuff(int delta, boolean divineTimerActive)
+	{
+		return delta > 0 && divineTimerActive;
 	}
 
 	/**

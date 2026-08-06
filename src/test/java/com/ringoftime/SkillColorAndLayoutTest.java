@@ -315,6 +315,14 @@ public class SkillColorAndLayoutTest
 	}
 
 	@Test
+	public void divineStylingStopsAtNeutralOrNegativeLevels()
+	{
+		assertTrue(SkillTimerOverlay.isPositiveDivineBuff(5, true));
+		assertFalse(SkillTimerOverlay.isPositiveDivineBuff(0, true));
+		assertFalse(SkillTimerOverlay.isPositiveDivineBuff(-2, true));
+	}
+
+	@Test
 	public void pluginUsesRingOfTimeIdentity()
 	{
 		assertEquals(
