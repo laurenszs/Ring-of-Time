@@ -28,7 +28,8 @@ final class EffectTimerTracker
 		ANTIPOISON,
 		STAMINA,
 		ANTIFIRE,
-		SUPER_ANTIFIRE
+		SUPER_ANTIFIRE,
+		THRALL
 	}
 
 	static final int POISON_CYCLE_MILLIS = 18_200;
@@ -39,8 +40,10 @@ final class EffectTimerTracker
 	static final int STAMINA_UNIT_TICKS = 10;
 	static final int ANTIFIRE_UNIT_TICKS = 30;
 	static final int SUPER_ANTIFIRE_UNIT_TICKS = 20;
+	static final int THRALL_COOLDOWN_TICKS = 17;
 
 	private final Map<Effect, Countdown> countdowns = new EnumMap<>(Effect.class);
+	private final Countdown thrallCooldown = new Countdown(1);
 	private int poisonValue;
 	private int poisonPeakValue;
 	private int poisonCycleStartTick = -1;
@@ -53,6 +56,7 @@ final class EffectTimerTracker
 		countdowns.put(Effect.STAMINA, new Countdown(STAMINA_UNIT_TICKS));
 		countdowns.put(Effect.ANTIFIRE, new Countdown(ANTIFIRE_UNIT_TICKS));
 		countdowns.put(Effect.SUPER_ANTIFIRE, new Countdown(SUPER_ANTIFIRE_UNIT_TICKS));
+		countdowns.put(Effect.THRALL, new Countdown(1));
 	}
 
 	/**
@@ -70,6 +74,7 @@ final class EffectTimerTracker
 		{
 			countdown.reset();
 		}
+		thrallCooldown.reset();
 	}
 
 	void observePoison(int value, int currentTick, boolean exactChange)
@@ -191,6 +196,38 @@ final class EffectTimerTracker
 			currentTick,
 			exactChange
 		);
+	}
+
+	void startThrall(int boostedMagicLevel, boolean masterCombatAchievements, int currentTick)
+	{
+		final int durationTicks = Math.max(0, boostedMagicLevel)
+			* (masterCombatAchievements ? 2 : 1);
+		final Countdown thrall = countdowns.get(Effect.THRALL);
+		thrall.reset();
+		thrall.observe(durationTicks, durationTicks > 0, currentTick, true);
+	}
+
+	void observeThrallCooldown(boolean active, int currentTick)
+	{
+		thrallCooldown.observe(THRALL_COOLDOWN_TICKS, active, currentTick, true);
+	}
+
+	boolean isThrallCooldownActive()
+	{
+		return thrallCooldown.isActive();
+	}
+
+	double getThrallCooldownProgress(int currentTick, double subTickProgress)
+	{
+		return thrallCooldown.getProgress(currentTick, subTickProgress);
+	}
+
+	void observeThrallActive(boolean active)
+	{
+		if (!active)
+		{
+			countdowns.get(Effect.THRALL).reset();
+		}
 	}
 
 	/**

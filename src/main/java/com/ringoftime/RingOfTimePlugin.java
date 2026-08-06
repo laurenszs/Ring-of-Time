@@ -12,11 +12,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import javax.inject.Inject;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.Constants;
 import net.runelite.api.GameState;
 import net.runelite.api.Prayer;
 import net.runelite.api.Skill;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.StatChanged;
@@ -30,6 +32,7 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.OverlayMenuClicked;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SkillIconManager;
+import net.runelite.client.game.SpriteManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -51,6 +54,8 @@ import net.runelite.client.ui.overlay.OverlayManager;
 )
 public class RingOfTimePlugin extends Plugin
 {
+	private static final String RESURRECT_THRALL_MESSAGE_START = ">You resurrect a ";
+	private static final String RESURRECT_THRALL_MESSAGE_END = " thrall.</col>";
 	/*
 	 * Hitpoints and Prayer use different mechanics, so this plugin follows the
 	 * same boostable-skill categories as RuneLite's core Boosts Information
@@ -112,6 +117,9 @@ public class RingOfTimePlugin extends Plugin
 	private ItemManager itemManager;
 
 	@Inject
+	private SpriteManager spriteManager;
+
+	@Inject
 	private ClientThread clientThread;
 
 	private final StatChangeTracker tracker = new StatChangeTracker();
@@ -151,6 +159,7 @@ public class RingOfTimePlugin extends Plugin
 				this,
 				config,
 				itemManager,
+				spriteManager,
 				effect
 			);
 			effectOverlays.put(effect, overlay);
@@ -229,6 +238,29 @@ public class RingOfTimePlugin extends Plugin
 		layoutActiveOverlays();
 	}
 
+	@Subscribe
+	public void onChatMessage(ChatMessage event)
+	{
+		if (!isThrallSummonMessage(event.getType(), event.getMessage()))
+		{
+			return;
+		}
+
+		effectTracker.startThrall(
+			client.getBoostedSkillLevel(Skill.MAGIC),
+			client.getVarbitValue(VarbitID.CA_TIER_STATUS_MASTER) == 2,
+			client.getTickCount()
+		);
+		layoutActiveOverlays();
+	}
+
+	static boolean isThrallSummonMessage(ChatMessageType type, String message)
+	{
+		return (type == ChatMessageType.SPAM || type == ChatMessageType.GAMEMESSAGE)
+			&& message.contains(RESURRECT_THRALL_MESSAGE_START)
+			&& message.endsWith(RESURRECT_THRALL_MESSAGE_END);
+	}
+
 	/**
 	 * Anchors coarse effect variables when their authoritative values change.
 	 */
@@ -245,6 +277,18 @@ public class RingOfTimePlugin extends Plugin
 			 */
 			effectTracker.observePoison(event.getValue(), currentTick, true);
 			effectTracker.observeAntipoison(event.getValue(), currentTick, true);
+			relevantEffectChanged = true;
+		}
+
+		if (event.getVarbitId() == VarbitID.ARCEUUS_RESURRECTION_ACTIVE)
+		{
+			effectTracker.observeThrallActive(event.getValue() != 0);
+			relevantEffectChanged = true;
+		}
+
+		if (event.getVarbitId() == VarbitID.ARCEUUS_RESURRECTION_COOLDOWN)
+		{
+			effectTracker.observeThrallCooldown(event.getValue() != 0, currentTick);
 			relevantEffectChanged = true;
 		}
 

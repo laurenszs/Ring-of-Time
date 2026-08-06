@@ -38,5 +38,6 @@ Ring of Time tracks ordinary one-level buff decay and debuff recovery for:
 - Stamina
 - Regular and extended antifire
 - Super and extended-super antifire
+- Summoned thralls with an inner resurrection-cooldown ring
 
 Poison and venom rings show the next damage cycle. Poison also shows its projected natural cure time.

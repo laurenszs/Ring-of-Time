@@ -237,6 +237,9 @@ public class SkillColorAndLayoutTest
 		assertEquals(10, config.ringGroupHorizontalSpacing());
 		assertEquals(2, config.ringGroupVerticalSpacing());
 		assertEquals(10, config.ringGroupUiPadding());
+		assertTrue(config.showThrall());
+		assertEquals(new Color(137, 127, 224, 255), config.thrallColor());
+		assertEquals(new Color(238, 74, 74, 255), config.thrallFlashColor());
 	}
 
 	@Test
@@ -375,6 +378,9 @@ public class SkillColorAndLayoutTest
 		assertConfigItemName("emptyRingColor", "Ring background color");
 		assertConfigItemName("outlineThickness", "Ring outline thickness");
 		assertConfigItemName("poisonInnerRing", "Next poison-hit ring");
+		assertConfigItemName("showThrall", "Thrall");
+		assertConfigItemName("thrallColor", "Thrall color");
+		assertConfigItemName("thrallFlashColor", "Thrall flash color");
 	}
 
 	private static void assertConfigItemName(String methodName, String expected) throws Exception

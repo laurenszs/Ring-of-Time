@@ -265,7 +265,7 @@ public interface RingOfTimeConfig extends Config
 
 	@ConfigSection(
 		name = "Protection & effect timers",
-		description = "Antipoison, anti-venom, stamina, and antifire settings.",
+		description = "Antipoison, anti-venom, stamina, antifire, and thrall settings.",
 		position = 7,
 		closedByDefault = false
 	)
@@ -375,7 +375,7 @@ public interface RingOfTimeConfig extends Config
 	@ConfigItem(
 		keyName = "buffInnerRingColor",
 		name = "Next-change color",
-		description = "Yellow color of the next one-level buff-decay ring.",
+		description = "Color of buff next-change and thrall cooldown inner rings.",
 		position = 2,
 		section = BUFFS_SECTION
 	)
@@ -995,12 +995,51 @@ public interface RingOfTimeConfig extends Config
 		return new Color(204, 156, 255, 255);
 	}
 
+	@ConfigItem(
+		keyName = "showThrall",
+		name = "Thrall",
+		description = "Show the remaining duration of your summoned thrall.",
+		position = 7,
+		section = EFFECTS_SECTION
+	)
+	default boolean showThrall()
+	{
+		return true;
+	}
+
+	@Alpha
+	@ConfigItem(
+		keyName = "thrallColor",
+		name = "Thrall color",
+		description = "Color used for the summoned-thrall timer.",
+		position = 8,
+		section = EFFECTS_SECTION
+	)
+	default Color thrallColor()
+	{
+		return new Color(137, 127, 224, 255);
+	}
+
+
+	@Alpha
+	@ConfigItem(
+		keyName = "thrallFlashColor",
+		name = "Thrall flash color",
+		description = "Color used when the thrall timer flashes near expiry.",
+		position = 9,
+		section = EFFECTS_SECTION
+	)
+	default Color thrallFlashColor()
+	{
+		return new Color(238, 74, 74, 255);
+	}
+
 	@Alpha
 	@ConfigItem(
 		keyName = "effectOutlineColor",
 		name = "Outline color",
-		description = "Yellow outline used by protection, stamina, and antifire circles.",
-		position = 7,
+		description = "Yellow outline used by protection, stamina, antifire, and thrall circles.",
+		position = 10,
 		section = EFFECTS_SECTION
 	)
 	default Color effectOutlineColor()

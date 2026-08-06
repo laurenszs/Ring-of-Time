@@ -1,6 +1,7 @@
 package com.ringoftime;
 
 import com.ringoftime.EffectTimerTracker.Effect;
+import net.runelite.api.ChatMessageType;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -117,5 +118,45 @@ public class EffectTimerTrackerTest
 
 		assertEquals(66, tracker.getRemainingSeconds(Effect.ANTIFIRE, 10, 0d));
 		assertEquals(30, tracker.getRemainingSeconds(Effect.SUPER_ANTIFIRE, 10, 0d));
+	}
+
+	@Test
+	public void thrallDurationUsesBoostedMagicAndMasterTier()
+	{
+		tracker.observeThrallCooldown(true, 96);
+		tracker.startThrall(90, false, 100);
+		assertTrue(tracker.isActive(Effect.THRALL));
+		assertFalse(tracker.isEstimated(Effect.THRALL));
+		assertEquals(1d, tracker.getOverallProgress(Effect.THRALL, 100, 0d), TOLERANCE);
+		assertEquals(54, tracker.getRemainingSeconds(Effect.THRALL, 100, 0d));
+		assertEquals(0.5d, tracker.getOverallProgress(Effect.THRALL, 145, 0d), TOLERANCE);
+		assertTrue(tracker.isThrallCooldownActive());
+		assertEquals(13d / 17d, tracker.getThrallCooldownProgress(100, 0d), TOLERANCE);
+
+		// Repeated active observations must not move the original cooldown anchor.
+		tracker.observeThrallCooldown(true, 100);
+		assertEquals(13d / 17d, tracker.getThrallCooldownProgress(100, 0d), TOLERANCE);
+		assertEquals(0.5d, tracker.getThrallCooldownProgress(104, 0.5d), TOLERANCE);
+		tracker.observeThrallCooldown(false, 113);
+		assertFalse(tracker.isThrallCooldownActive());
+
+		tracker.startThrall(90, true, 200);
+		assertEquals(108, tracker.getRemainingSeconds(Effect.THRALL, 200, 0d));
+
+		tracker.observeThrallActive(false);
+		assertFalse(tracker.isActive(Effect.THRALL));
+	}
+
+	@Test
+	public void onlySuccessfulThrallGameMessagesStartTheTimer()
+	{
+		final String message = "<col=ef1020>You resurrect a greater ghost thrall.</col>";
+		assertTrue(RingOfTimePlugin.isThrallSummonMessage(ChatMessageType.GAMEMESSAGE, message));
+		assertTrue(RingOfTimePlugin.isThrallSummonMessage(ChatMessageType.SPAM, message));
+		assertFalse(RingOfTimePlugin.isThrallSummonMessage(ChatMessageType.PUBLICCHAT, message));
+		assertFalse(RingOfTimePlugin.isThrallSummonMessage(
+			ChatMessageType.GAMEMESSAGE,
+			"<col=ef1020>You do not have enough runes.</col>"
+		));
 	}
 }

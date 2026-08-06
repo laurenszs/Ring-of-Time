@@ -15,7 +15,9 @@ import java.awt.Rectangle;
 import java.awt.geom.Arc2D;
 import net.runelite.api.Client;
 import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.SpriteID;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.game.SpriteManager;
 import net.runelite.client.ui.FontManager;
 
 /**
@@ -35,7 +37,7 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 	private final RingOfTimePlugin plugin;
 	private final RingOfTimeConfig config;
 	private final Effect effect;
-	private final Image primaryIcon;
+	private volatile Image primaryIcon;
 	private final Image alternateIcon;
 
 	/**
@@ -46,6 +48,7 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 		RingOfTimePlugin plugin,
 		RingOfTimeConfig config,
 		ItemManager itemManager,
+		SpriteManager spriteManager,
 		Effect effect)
 	{
 		super(plugin);
@@ -54,7 +57,16 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 		this.config = config;
 		this.effect = effect;
 		this.primaryIcon = loadPrimaryIcon(itemManager, effect);
-		this.alternateIcon = effect == Effect.TOXIN || effect == Effect.ANTIPOISON
+		if (effect == Effect.THRALL && spriteManager != null)
+		{
+			spriteManager.getSpriteAsync(
+				SpriteID.MagicNecroOn.RESURRECT_SUPERIOR_SKELETON,
+				0,
+				image -> primaryIcon = image
+			);
+		}
+		this.alternateIcon = itemManager != null
+			&& (effect == Effect.TOXIN || effect == Effect.ANTIPOISON)
 			? itemManager.getImage(ItemID.ANTIVENOM4)
 			: null;
 
@@ -80,6 +92,8 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 				return persistentName("Antifire");
 			case SUPER_ANTIFIRE:
 				return persistentName("Super Antifire");
+			case THRALL:
+				return persistentName("Thrall");
 			default:
 				return persistentName("Effect");
 		}
@@ -116,9 +130,12 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 			? null
 			: Integer.toString(tracker.getNextToxinDamage());
 		final Font plusMinusFont = FontManager.getRunescapeBoldFont().deriveFont((float) config.plusMinusFontSize());
-		final boolean innerRingVisible = effect == Effect.TOXIN
+		final boolean poisonInnerRingVisible = effect == Effect.TOXIN
 			&& tracker.hasMultiplePoisonCycles()
 			&& config.poisonInnerRing().isShown();
+		final boolean thrallCooldownVisible = effect == Effect.THRALL
+			&& tracker.isThrallCooldownActive();
+		final boolean innerRingVisible = poisonInnerRingVisible || thrallCooldownVisible;
 		final int thickness = Math.min(config.ringThickness(), Math.max(2, size / 3));
 		final int outlineThickness = config.showRingOutline() ? config.outlineThickness() : 0;
 		final int clearCenterSize = TimerLabelLayout.getClearCenterSize(
@@ -237,11 +254,14 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 
 		if (effect != Effect.TOXIN)
 		{
+			final Color flashColor = effect == Effect.THRALL
+				? config.thrallFlashColor()
+				: activeColor;
 			drawExpiryFlash(
 				graphics,
 				ring,
 				thickness,
-				activeColor,
+				flashColor,
 				remainingSeconds,
 				currentTick,
 				subTickProgress
@@ -252,12 +272,26 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 			&& tracker.hasMultiplePoisonCycles()
 			&& config.poisonInnerRing().isShown())
 		{
-			drawPoisonCycle(
+			drawInnerRing(
 				graphics,
 				size,
 				thickness,
 				outlineThickness,
-				tracker.getNextPoisonHitProgress(currentTick, subTickProgress)
+				tracker.getNextPoisonHitProgress(currentTick, subTickProgress),
+				config.toxinInnerRingColor(),
+				config.debuffOutlineColor()
+			);
+		}
+		else if (effect == Effect.THRALL && tracker.isThrallCooldownActive())
+		{
+			drawInnerRing(
+				graphics,
+				size,
+				thickness,
+				outlineThickness,
+				tracker.getThrallCooldownProgress(currentTick, subTickProgress),
+				config.buffInnerRingColor(),
+				config.effectOutlineColor()
 			);
 		}
 
@@ -316,14 +350,16 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 	}
 
 	/**
-	 * Draws poison's next-damage cycle inside its total natural-cure ring.
+	 * Draws a secondary countdown inside an effect's total-duration ring.
 	 */
-	private void drawPoisonCycle(
+	private void drawInnerRing(
 		Graphics2D graphics,
 		int size,
 		int outerThickness,
 		int outlineThickness,
-		double progress)
+		double progress,
+		Color activeColor,
+		Color outlineColor)
 	{
 		final int innerThickness = Math.max(2, Math.min(4, (outerThickness + 1) / 2));
 		final double gap = Math.max(2d, outerThickness * 0.35d);
@@ -355,7 +391,7 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 				BasicStroke.CAP_ROUND,
 				BasicStroke.JOIN_ROUND
 			));
-			graphics.setColor(config.debuffOutlineColor());
+			graphics.setColor(outlineColor);
 			graphics.draw(innerRing);
 		}
 
@@ -364,7 +400,7 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 		graphics.draw(innerRing);
 
 		innerRing.setAngleExtent(-360d * progress);
-		graphics.setColor(config.toxinInnerRingColor());
+		graphics.setColor(activeColor);
 		graphics.draw(innerRing);
 	}
 
@@ -386,6 +422,8 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 			case ANTIFIRE:
 			case SUPER_ANTIFIRE:
 				return config.antifireColor();
+			case THRALL:
+				return config.thrallColor();
 			default:
 				return Color.WHITE;
 		}
@@ -417,6 +455,8 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 			case ANTIFIRE:
 			case SUPER_ANTIFIRE:
 				return config.showAntifire();
+			case THRALL:
+				return config.showThrall();
 			default:
 				return false;
 		}
@@ -424,6 +464,11 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 
 	private static Image loadPrimaryIcon(ItemManager itemManager, Effect effect)
 	{
+		if (itemManager == null || effect == Effect.THRALL)
+		{
+			return null;
+		}
+
 		switch (effect)
 		{
 			case TOXIN:
