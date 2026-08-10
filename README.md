@@ -9,9 +9,9 @@ Ring of Time makes buffs, debuffs, and timed effects easier to understand at a g
 - Separate ring for every active skill or effect
 - Stack rings into resizable groups with adjustable spacing and padding
 - Outer ring shows the total remaining duration
-- Optional inner ring shows the next one-level decay or recovery
+- Optional inner rings show the next stat change, poison hit, prayer regeneration, or thrall cooldown
 - Configurable ring size, thickness, outlines, colors, and labels
-- Custom positions for icons, countdowns, and +/- values
+- Independent positions for skill and effect icons, plus custom countdown and +/- positions
 - Display either the skill change (`+5`) or effective level (`105`)
 - Optional flashing when beneficial effects are about to expire
 - Preserve-aware buff timers with cyan countdown text while Preserve is active
