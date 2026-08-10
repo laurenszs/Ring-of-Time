@@ -5,6 +5,7 @@ import com.ringoftime.RingOfTimeConfig.DebuffDisplay;
 import com.ringoftime.RingOfTimeConfig.IconPosition;
 import com.ringoftime.RingOfTimeConfig.TimerPosition;
 import java.awt.Color;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.Point;
@@ -231,6 +232,7 @@ public class SkillColorAndLayoutTest
 		assertFalse(config.showRingOutline());
 		assertEquals(new Color(0, 0, 0, 50), config.plusMinusBackgroundColor());
 		assertEquals(IconPosition.TOP_LEFT, config.iconPosition());
+		assertEquals(IconPosition.TOP_LEFT, config.effectIconPosition());
 		assertEquals(PlusMinusPosition.TOP_RIGHT, config.buffPlusMinusPosition());
 		assertEquals(PlusMinusPosition.TOP_RIGHT, config.debuffPlusMinusPosition());
 		assertEquals(RingOfTimeConfig.TrackedSkills.ALL, config.trackedSkills());
@@ -244,6 +246,18 @@ public class SkillColorAndLayoutTest
 		assertEquals(new Color(238, 74, 74, 255), config.thrallFlashColor());
 	}
 
+	@Test
+	public void maximumLayoutIncludesIndependentEffectIconPosition()
+	{
+		final Dimension centered = TimerLabelLayout.estimateMaximumDimension(
+			configWithEffectIconPosition(IconPosition.CENTER)
+		);
+		final Dimension above = TimerLabelLayout.estimateMaximumDimension(
+			configWithEffectIconPosition(IconPosition.ABOVE_RING)
+		);
+
+		assertTrue(above.height > centered.height);
+	}
 	@Test
 	public void divineIndicatorIsSmallAndCenteredAtTopOfRing()
 	{
@@ -379,6 +393,8 @@ public class SkillColorAndLayoutTest
 				.getAnnotation(ConfigSection.class).name()
 		);
 
+		assertConfigItemName("iconPosition", "Skill icon position");
+		assertConfigItemName("effectIconPosition", "Effect icon position");
 		assertConfigItemName("trackedSkills", "Shown buffs");
 		assertConfigItemName("debuffDisplay", "Shown debuffs");
 		assertConfigItemName("buffInnerRing", "Next-change ring");
@@ -395,6 +411,41 @@ public class SkillColorAndLayoutTest
 		assertConfigItemName("thrallFlashColor", "Thrall flash color");
 	}
 
+	private static RingOfTimeConfig configWithEffectIconPosition(IconPosition position)
+	{
+		return new RingOfTimeConfig()
+		{
+			@Override
+			public TimerPosition timerPosition()
+			{
+				return TimerPosition.OFF;
+			}
+
+			@Override
+			public IconPosition iconPosition()
+			{
+				return IconPosition.CENTER;
+			}
+
+			@Override
+			public IconPosition effectIconPosition()
+			{
+				return position;
+			}
+
+			@Override
+			public PlusMinusPosition buffPlusMinusPosition()
+			{
+				return PlusMinusPosition.OFF;
+			}
+
+			@Override
+			public PlusMinusPosition debuffPlusMinusPosition()
+			{
+				return PlusMinusPosition.OFF;
+			}
+		};
+	}
 	private static void assertConfigItemName(String methodName, String expected) throws Exception
 	{
 		assertEquals(

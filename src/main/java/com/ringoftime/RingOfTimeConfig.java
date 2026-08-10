@@ -217,7 +217,7 @@ public interface RingOfTimeConfig extends Config
 
 	@ConfigSection(
 		name = "Labels & icons",
-		description = "Countdown, +/- text, and icon placement settings.",
+		description = "Countdown, +/- text, and skill icon placement settings.",
 		position = 1,
 		closedByDefault = false
 	)
@@ -323,8 +323,8 @@ public interface RingOfTimeConfig extends Config
 
 	@ConfigItem(
 		keyName = "iconPosition",
-		name = "Icon position",
-		description = "Place the skill or effect icon on a corner, in the center, above, or under the ring.",
+		name = "Skill icon position",
+		description = "Place skill icons on a corner, in the center, above, or under their rings.",
 		position = 1,
 		section = LABELS_SECTION
 	)
@@ -873,7 +873,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "showStamina",
 		name = "Stamina",
 		description = "Show the remaining stamina-effect circle.",
-		position = 3,
+		position = 4,
 		section = EFFECTS_SECTION
 	)
 	default boolean showStamina()
@@ -885,7 +885,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "showAntifire",
 		name = "Antifire",
 		description = "Show regular, extended, super, and extended-super antifire circles.",
-		position = 5,
+		position = 6,
 		section = EFFECTS_SECTION
 	)
 	default boolean showAntifire()
@@ -932,10 +932,21 @@ public interface RingOfTimeConfig extends Config
 	}
 
 	@ConfigItem(
+		keyName = "effectIconPosition",
+		name = "Effect icon position",
+		description = "Place effect icons on a corner, in the center, above, or under their rings.",
+		position = 0,
+		section = EFFECTS_SECTION
+	)
+	default IconPosition effectIconPosition()
+	{
+		return IconPosition.TOP_LEFT;
+	}
+	@ConfigItem(
 		keyName = "showAntipoison",
 		name = "Antipoison protection",
 		description = "Show antipoison and anti-venom protection in one independent circle.",
-		position = 0,
+		position = 1,
 		section = EFFECTS_SECTION
 	)
 	default boolean showAntipoison()
@@ -948,7 +959,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "antipoisonColor",
 		name = "Antipoison color",
 		description = "Color used while ordinary antipoison protection is active.",
-		position = 1,
+		position = 2,
 		section = EFFECTS_SECTION
 	)
 	default Color antipoisonColor()
@@ -961,7 +972,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "antivenomProtectionColor",
 		name = "Anti-venom color",
 		description = "Color used while anti-venom protection is active.",
-		position = 2,
+		position = 3,
 		section = EFFECTS_SECTION
 	)
 	default Color antivenomProtectionColor()
@@ -974,7 +985,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "staminaColor",
 		name = "Stamina color",
 		description = "Brown color used for the stamina effect.",
-		position = 4,
+		position = 5,
 		section = EFFECTS_SECTION
 	)
 	default Color staminaColor()
@@ -987,7 +998,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "antifireColor",
 		name = "Antifire color",
 		description = "Light purple color used for regular and super antifire.",
-		position = 6,
+		position = 7,
 		section = EFFECTS_SECTION
 	)
 	default Color antifireColor()
@@ -999,7 +1010,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "showPrayerRegeneration",
 		name = "Prayer regeneration",
 		description = "Show the remaining prayer-regeneration potion duration.",
-		position = 7,
+		position = 8,
 		section = EFFECTS_SECTION
 	)
 	default boolean showPrayerRegeneration()
@@ -1012,7 +1023,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "prayerRegenerationColor",
 		name = "Prayer regeneration color",
 		description = "Pale blue color used for prayer-regeneration potions.",
-		position = 8,
+		position = 9,
 		section = EFFECTS_SECTION
 	)
 	default Color prayerRegenerationColor()
@@ -1024,7 +1035,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "showThrall",
 		name = "Thrall",
 		description = "Show the remaining duration of your summoned thrall.",
-		position = 9,
+		position = 10,
 		section = EFFECTS_SECTION
 	)
 	default boolean showThrall()
@@ -1037,7 +1048,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "thrallColor",
 		name = "Thrall color",
 		description = "Color used for the summoned-thrall timer.",
-		position = 10,
+		position = 11,
 		section = EFFECTS_SECTION
 	)
 	default Color thrallColor()
@@ -1051,7 +1062,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "thrallFlashColor",
 		name = "Thrall flash color",
 		description = "Color used when the thrall timer flashes near expiry.",
-		position = 11,
+		position = 12,
 		section = EFFECTS_SECTION
 	)
 	default Color thrallFlashColor()
@@ -1064,7 +1075,7 @@ public interface RingOfTimeConfig extends Config
 		keyName = "effectOutlineColor",
 		name = "Outline color",
 		description = "Yellow outline used by protection, stamina, antifire, prayer regeneration, and thrall circles.",
-		position = 12,
+		position = 13,
 		section = EFFECTS_SECTION
 	)
 	default Color effectOutlineColor()

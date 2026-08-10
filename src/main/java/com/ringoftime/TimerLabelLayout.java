@@ -114,9 +114,26 @@ final class TimerLabelLayout
 			config.iconPosition()
 		);
 
+		final TimerLabelLayout effectLayout = createWithSizes(
+			config.ringSize(),
+			timerWidth,
+			timerHeight,
+			config.timerPosition(),
+			0,
+			0,
+			PlusMinusPosition.OFF,
+			config.effectIconPosition()
+		);
+
 		return new Dimension(
-			Math.max(buffLayout.dimension.width, debuffLayout.dimension.width),
-			Math.max(buffLayout.dimension.height, debuffLayout.dimension.height)
+			Math.max(
+				Math.max(buffLayout.dimension.width, debuffLayout.dimension.width),
+				effectLayout.dimension.width
+			),
+			Math.max(
+				Math.max(buffLayout.dimension.height, debuffLayout.dimension.height),
+				effectLayout.dimension.height
+			)
 		);
 	}
 

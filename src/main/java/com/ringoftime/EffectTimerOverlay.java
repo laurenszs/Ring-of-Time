@@ -165,7 +165,7 @@ final class EffectTimerOverlay extends TimerCircleOverlay
 			graphics.getFontMetrics(plusMinusFont),
 			plusMinusText,
 			plusMinusPosition,
-			config.iconPosition()
+			config.effectIconPosition()
 		);
 
 		final Graphics2D canvas = (Graphics2D) graphics.create();
