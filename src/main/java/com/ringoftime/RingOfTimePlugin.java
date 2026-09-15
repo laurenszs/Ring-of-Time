@@ -11,6 +11,9 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
@@ -55,6 +58,11 @@ import net.runelite.client.ui.overlay.OverlayManager;
 )
 public class RingOfTimePlugin extends Plugin
 {
+	static final String CURRENT_VERSION = "1.3.0";
+	static final String UPDATE_MESSAGE = "<col=ff981f>Ring of Time v1.3.0:</col> "
+		+ "Ring order within groups can now be customized with Ctrl+Alt-drag.";
+	static final long UPDATE_MESSAGE_DELAY_SECONDS = 3L;
+	private static final String LAST_SEEN_UPDATE_VERSION_KEY = "lastSeenUpdateVersion";
 	private static final String RESURRECT_THRALL_MESSAGE_START = ">You resurrect a ";
 	private static final String RESURRECT_THRALL_MESSAGE_END = " thrall.</col>";
 	/*
@@ -126,6 +134,9 @@ public class RingOfTimePlugin extends Plugin
 	@Inject
 	private MouseManager mouseManager;
 
+	@Inject
+	private ScheduledExecutorService executor;
+
 	private final StatChangeTracker tracker = new StatChangeTracker();
 	private final DivineTimerTracker divineTracker = new DivineTimerTracker();
 	private final EffectTimerTracker effectTracker = new EffectTimerTracker();
@@ -133,6 +144,7 @@ public class RingOfTimePlugin extends Plugin
 	private final Map<Effect, EffectTimerOverlay> effectOverlays = new EnumMap<>(Effect.class);
 	private TimerGroupManager groupManager;
 	private TimerGroupReorderInput groupReorderInput;
+	private ScheduledFuture<?> updateMessageFuture;
 	private long lastGameTickMillis;
 
 	/**
@@ -193,6 +205,7 @@ public class RingOfTimePlugin extends Plugin
 		{
 			if (!skillOverlays.isEmpty() && client.getGameState() == GameState.LOGGED_IN)
 			{
+				scheduleUpdateMessage();
 				observeDivineState();
 				observeAllSkills();
 				observeEffectState(false);
@@ -207,6 +220,8 @@ public class RingOfTimePlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		cancelUpdateMessage();
+
 		if (groupReorderInput != null)
 		{
 			mouseManager.unregisterMouseListener(groupReorderInput);
@@ -364,12 +379,14 @@ public class RingOfTimePlugin extends Plugin
 		{
 			case LOGIN_SCREEN:
 			case HOPPING:
+				cancelUpdateMessage();
 				tracker.reset();
 				effectTracker.reset();
 				lastGameTickMillis = 0L;
 				divineTracker.reset();
 				break;
 			case LOGGED_IN:
+				scheduleUpdateMessage();
 				observeDivineState();
 				observeAllSkills();
 				observeEffectState(false);
@@ -412,6 +429,63 @@ public class RingOfTimePlugin extends Plugin
 	RingOfTimeConfig provideConfig(ConfigManager configManager)
 	{
 		return configManager.getConfig(RingOfTimeConfig.class);
+	}
+
+	static boolean shouldShowUpdateMessage(String lastSeenVersion)
+	{
+		return !CURRENT_VERSION.equals(lastSeenVersion);
+	}
+
+	private void showUpdateMessageIfNeeded()
+	{
+		final String lastSeenVersion = configManager.getConfiguration(
+			RingOfTimeConfig.GROUP,
+			LAST_SEEN_UPDATE_VERSION_KEY
+		);
+		if (!shouldShowUpdateMessage(lastSeenVersion))
+		{
+			return;
+		}
+
+		client.addChatMessage(ChatMessageType.GAMEMESSAGE, "", UPDATE_MESSAGE, null);
+		configManager.setConfiguration(
+			RingOfTimeConfig.GROUP,
+			LAST_SEEN_UPDATE_VERSION_KEY,
+			CURRENT_VERSION
+		);
+	}
+
+	private void scheduleUpdateMessage()
+	{
+		cancelUpdateMessage();
+		if (!shouldShowUpdateMessage(configManager.getConfiguration(
+			RingOfTimeConfig.GROUP,
+			LAST_SEEN_UPDATE_VERSION_KEY)))
+		{
+			return;
+		}
+
+		updateMessageFuture = executor.schedule(
+			() -> clientThread.invokeLater(() ->
+			{
+				updateMessageFuture = null;
+				if (groupManager != null && client.getGameState() == GameState.LOGGED_IN)
+				{
+					showUpdateMessageIfNeeded();
+				}
+			}),
+			UPDATE_MESSAGE_DELAY_SECONDS,
+			TimeUnit.SECONDS
+		);
+	}
+
+	private void cancelUpdateMessage()
+	{
+		if (updateMessageFuture != null)
+		{
+			updateMessageFuture.cancel(false);
+			updateMessageFuture = null;
+		}
 	}
 
 	/**
