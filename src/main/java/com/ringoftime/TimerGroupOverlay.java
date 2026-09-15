@@ -211,8 +211,9 @@ final class TimerGroupOverlay extends OverlayPanel
 
 		final Point currentLocation = getPreferredLocation();
 		if (getPreferredSize() != null
-			|| lastAutomaticLocation != null
-			&& (!lastAutomaticLocation.equals(currentLocation) || getPreferredPosition() != null))
+			|| getPreferredPosition() != null
+			|| (lastAutomaticLocation == null && currentLocation != null)
+			|| (lastAutomaticLocation != null && !lastAutomaticLocation.equals(currentLocation)))
 		{
 			automaticLayoutEnabled = false;
 			return false;

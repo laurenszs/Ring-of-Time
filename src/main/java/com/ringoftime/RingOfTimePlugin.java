@@ -406,6 +406,11 @@ public class RingOfTimePlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
+		if (groupManager != null && "runelite".equals(event.getGroup()))
+		{
+			groupManager.handleOverlayConfigChanged(event.getKey(), event.getNewValue());
+		}
+
 		if (RingOfTimeConfig.GROUP.equals(event.getGroup()))
 		{
 			layoutActiveOverlays();

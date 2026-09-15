@@ -88,6 +88,18 @@ public class TimerGroupOverlayTest
 	}
 
 	@Test
+	public void externalPlacementBeforeFirstActiveRingStopsAutomaticPlacement()
+	{
+		final TimerGroupOverlay group = createGroup();
+		group.initializeAutomaticLayout();
+		final Point anchoredLocation = new Point(400, 250);
+		group.setPreferredLocation(anchoredLocation);
+
+		assertFalse(group.applyAutomaticLocation(new Point(10, 10)));
+		assertEquals(anchoredLocation, group.getPreferredLocation());
+	}
+
+	@Test
 	public void movingMembersUsesTheTargetSlotInEitherDirection()
 	{
 		final TimerGroupOverlay group = createGroup();
@@ -246,6 +258,22 @@ public class TimerGroupOverlayTest
 		}
 
 		assertConfigurationSafe(TimerCircleOverlay.persistentName("Group example"));
+	}
+
+	@Test
+	public void combinedGroupIdentityDoesNotBelongToAMember()
+	{
+		final FakeTimer hunter = new FakeTimer("Ring of Time - Hunter");
+		final FakeTimer antifire = new FakeTimer("Ring of Time - Antifire");
+
+		assertTrue(TimerGroupManager.isMemberNamedGroup(
+			hunter.getName(),
+			Arrays.asList(hunter, antifire)
+		));
+		assertFalse(TimerGroupManager.isMemberNamedGroup(
+			"Ring of Time - Group 1",
+			Arrays.asList(hunter, antifire)
+		));
 	}
 
 	private static void assertConfigurationSafe(String name)
