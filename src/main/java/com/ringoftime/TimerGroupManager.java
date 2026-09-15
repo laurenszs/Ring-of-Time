@@ -30,6 +30,7 @@ final class TimerGroupManager
 	private final RingOfTimeConfig config;
 	private final OverlayManager overlayManager;
 	private final ConfigManager configManager;
+	private final CustomUiAnchorsCompatibility customUiAnchorsCompatibility;
 
 	private final Map<String, TimerGroupOverlay> groups = new LinkedHashMap<>();
 
@@ -45,6 +46,7 @@ final class TimerGroupManager
 		this.config = config;
 		this.overlayManager = overlayManager;
 		this.configManager = configManager;
+		this.customUiAnchorsCompatibility = new CustomUiAnchorsCompatibility(configManager);
 	}
 
 	void start(Collection<? extends TimerCircleOverlay> timers)
@@ -65,6 +67,7 @@ final class TimerGroupManager
 		{
 			group.restoreMemberOrder(loadOrder(group.getName()));
 		}
+		customUiAnchorsCompatibility.reconcile(groups.values());
 	}
 
 	void shutDown()
@@ -96,6 +99,7 @@ final class TimerGroupManager
 		groups.remove(source.getName());
 		overlayManager.remove(source);
 		saveOrder(destination);
+		customUiAnchorsCompatibility.merge(source, destination);
 		configManager.unsetConfiguration(
 			LAYOUT_CONFIG_GROUP,
 			ORDER_PREFIX + source.getName()
@@ -173,6 +177,7 @@ final class TimerGroupManager
 			? TimerCircleOverlay.persistentName("Group " + UUID.randomUUID())
 			: timer.getName();
 		final TimerGroupOverlay detached = createGroup(groupName);
+		customUiAnchorsCompatibility.detach(groupName);
 
 		source.removeMember(timer);
 		detached.addMember(timer);
