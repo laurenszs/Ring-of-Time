@@ -6,7 +6,9 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import net.runelite.api.Client;
 import net.runelite.api.MenuAction;
@@ -32,6 +34,7 @@ final class TimerGroupOverlay extends OverlayPanel
 	private final TimerGroupManager manager;
 	private final String name;
 	private final List<TimerCircleOverlay> members = new CopyOnWriteArrayList<>();
+	private final Map<TimerCircleOverlay, Rectangle> visibleMemberBounds = new LinkedHashMap<>();
 
 	private ComponentOrientation orientation;
 	private TimerCircleOverlay hoveredTimer;
@@ -101,6 +104,10 @@ final class TimerGroupOverlay extends OverlayPanel
 
 		if (visibleComponents.isEmpty())
 		{
+			synchronized (visibleMemberBounds)
+			{
+				visibleMemberBounds.clear();
+			}
 			panelComponent.getChildren().clear();
 			return null;
 		}
@@ -118,18 +125,27 @@ final class TimerGroupOverlay extends OverlayPanel
 		{
 			final net.runelite.api.Point clientMouse = client.getMouseCanvasPosition();
 			final Point mouse = new Point(clientMouse.getX(), clientMouse.getY());
+			final Map<TimerCircleOverlay, Rectangle> renderedBounds = new LinkedHashMap<>();
+			boolean foundHoveredTimer = false;
 			for (TimerCircleComponent component : visibleComponents)
 			{
 				final Rectangle childBounds = new Rectangle(component.getBounds());
 				childBounds.translate(getBounds().x, getBounds().y);
-				if (childBounds.contains(mouse))
+				renderedBounds.put(component.getTimer(), childBounds);
+				if (!foundHoveredTimer && childBounds.contains(mouse))
 				{
+					foundHoveredTimer = true;
 					if (!menuOpen)
 					{
 						hoveredTimer = component.getTimer();
 					}
-					break;
 				}
+			}
+
+			synchronized (visibleMemberBounds)
+			{
+				visibleMemberBounds.clear();
+				visibleMemberBounds.putAll(renderedBounds);
 			}
 		}
 		finally
@@ -243,6 +259,100 @@ final class TimerGroupOverlay extends OverlayPanel
 		return new ArrayList<>(members);
 	}
 
+	/**
+	 * Returns the visible ring under a canvas point when this group has enough
+	 * visible members to reorder.
+	 */
+	MemberHit findMemberAt(Point canvasPoint)
+	{
+		synchronized (visibleMemberBounds)
+		{
+			if (visibleMemberBounds.size() < 2)
+			{
+				return null;
+			}
+
+			for (Map.Entry<TimerCircleOverlay, Rectangle> entry : visibleMemberBounds.entrySet())
+			{
+				if (entry.getValue().contains(canvasPoint))
+				{
+					return new MemberHit(this, entry.getKey());
+				}
+			}
+		}
+
+		return null;
+	}
+
+	/**
+	 * Inserts a member immediately before or after another group member.
+	 */
+	boolean moveMember(
+		TimerCircleOverlay dragged,
+		TimerCircleOverlay target,
+		boolean insertAfter)
+	{
+		if (dragged == null || target == null || dragged == target)
+		{
+			return false;
+		}
+
+		final List<TimerCircleOverlay> originalOrder = new ArrayList<>(members);
+		final int draggedIndex = members.indexOf(dragged);
+		int targetIndex = members.indexOf(target);
+		if (draggedIndex < 0 || targetIndex < 0)
+		{
+			return false;
+		}
+
+		members.remove(draggedIndex);
+		targetIndex = members.indexOf(target);
+		members.add(targetIndex + (insertAfter ? 1 : 0), dragged);
+		return !members.equals(originalOrder);
+	}
+
+	DragLayout captureDragLayout()
+	{
+		synchronized (visibleMemberBounds)
+		{
+			return visibleMemberBounds.size() < 2
+				? null
+				: new DragLayout(visibleMemberBounds);
+		}
+	}
+
+	/**
+	 * Applies known saved names first and leaves newly introduced timers in
+	 * their normal order at the end.
+	 */
+	void restoreMemberOrder(List<String> savedOrder)
+	{
+		if (savedOrder == null || savedOrder.isEmpty() || members.size() < 2)
+		{
+			return;
+		}
+
+		final List<TimerCircleOverlay> remaining = new ArrayList<>(members);
+		final List<TimerCircleOverlay> restored = new ArrayList<>(members.size());
+		for (String name : savedOrder)
+		{
+			for (int index = 0; index < remaining.size(); index++)
+			{
+				final TimerCircleOverlay member = remaining.get(index);
+				if (member.getName().equals(name))
+				{
+					restored.add(member);
+					remaining.remove(index);
+					break;
+				}
+			}
+		}
+
+		restored.addAll(remaining);
+		members.clear();
+		members.addAll(restored);
+	}
+
 	TimerCircleOverlay getHoveredTimer()
 	{
 		return hoveredTimer;
@@ -293,5 +403,99 @@ final class TimerGroupOverlay extends OverlayPanel
 			}
 		}
 		return count;
+	}
+
+	/**
+	 * Identifies both the group and ring found during mouse hit testing.
+	 */
+	static final class MemberHit
+	{
+		private final TimerGroupOverlay group;
+		private final TimerCircleOverlay member;
+
+		private MemberHit(TimerGroupOverlay group, TimerCircleOverlay member)
+		{
+			this.group = group;
+			this.member = member;
+		}
+
+		TimerGroupOverlay getGroup()
+		{
+			return group;
+		}
+
+		TimerCircleOverlay getMember()
+		{
+			return member;
+		}
+	}
+
+	static final class InsertionTarget
+	{
+		private final TimerCircleOverlay member;
+		private final boolean insertAfter;
+
+		private InsertionTarget(TimerCircleOverlay member, boolean insertAfter)
+		{
+			this.member = member;
+			this.insertAfter = insertAfter;
+		}
+
+		TimerCircleOverlay getMember()
+		{
+			return member;
+		}
+
+		boolean isInsertAfter()
+		{
+			return insertAfter;
+		}
+	}
+
+	static final class DragLayout
+	{
+		private final Map<TimerCircleOverlay, Rectangle> slots;
+
+		private DragLayout(Map<TimerCircleOverlay, Rectangle> visibleMemberBounds)
+		{
+			this.slots = new LinkedHashMap<>();
+			for (Map.Entry<TimerCircleOverlay, Rectangle> entry : visibleMemberBounds.entrySet())
+			{
+				this.slots.put(entry.getKey(), new Rectangle(entry.getValue()));
+			}
+		}
+
+		InsertionTarget findInsertionAt(Point canvasPoint, TimerCircleOverlay dragged)
+		{
+			int nearestSlotIndex = -1;
+			int slotIndex = 0;
+			double nearestDistance = Double.MAX_VALUE;
+			for (Map.Entry<TimerCircleOverlay, Rectangle> entry : slots.entrySet())
+			{
+				final Rectangle bounds = entry.getValue();
+				final double xDistance = canvasPoint.x - bounds.getCenterX();
+				final double yDistance = canvasPoint.y - bounds.getCenterY();
+				final double distance = xDistance * xDistance + yDistance * yDistance;
+				if (distance < nearestDistance)
+				{
+					nearestDistance = distance;
+					nearestSlotIndex = slotIndex;
+				}
+				slotIndex++;
+			}
+
+			final List<TimerCircleOverlay> remaining = new ArrayList<>(slots.keySet());
+			if (nearestSlotIndex < 0 || !remaining.remove(dragged) || remaining.isEmpty())
+			{
+				return null;
+			}
+
+			if (nearestSlotIndex >= remaining.size())
+			{
+				return new InsertionTarget(remaining.get(remaining.size() - 1), true);
+			}
+
+			return new InsertionTarget(remaining.get(nearestSlotIndex), false);
+		}
 	}
 }

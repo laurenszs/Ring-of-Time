@@ -33,6 +33,7 @@ import net.runelite.client.events.OverlayMenuClicked;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SkillIconManager;
 import net.runelite.client.game.SpriteManager;
+import net.runelite.client.input.MouseManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -122,12 +123,16 @@ public class RingOfTimePlugin extends Plugin
 	@Inject
 	private ClientThread clientThread;
 
+	@Inject
+	private MouseManager mouseManager;
+
 	private final StatChangeTracker tracker = new StatChangeTracker();
 	private final DivineTimerTracker divineTracker = new DivineTimerTracker();
 	private final EffectTimerTracker effectTracker = new EffectTimerTracker();
 	private final Map<Skill, SkillTimerOverlay> skillOverlays = new EnumMap<>(Skill.class);
 	private final Map<Effect, EffectTimerOverlay> effectOverlays = new EnumMap<>(Effect.class);
 	private TimerGroupManager groupManager;
+	private TimerGroupReorderInput groupReorderInput;
 	private long lastGameTickMillis;
 
 	/**
@@ -176,6 +181,8 @@ public class RingOfTimePlugin extends Plugin
 			configManager
 		);
 		groupManager.start(timers);
+		groupReorderInput = new TimerGroupReorderInput(client, groupManager);
+		mouseManager.registerMouseListener(0, groupReorderInput);
 
 		/*
 		 * The settings-panel toggle starts plugins on Swing's event thread.
@@ -200,6 +207,12 @@ public class RingOfTimePlugin extends Plugin
 	@Override
 	protected void shutDown()
 	{
+		if (groupReorderInput != null)
+		{
+			mouseManager.unregisterMouseListener(groupReorderInput);
+			groupReorderInput = null;
+		}
+
 		if (groupManager != null)
 		{
 			groupManager.shutDown();
