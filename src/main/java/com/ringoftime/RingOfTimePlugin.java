@@ -59,8 +59,9 @@ import net.runelite.client.ui.overlay.OverlayManager;
 public class RingOfTimePlugin extends Plugin
 {
 	static final String CURRENT_VERSION = "1.3.0";
-	static final String UPDATE_MESSAGE = "<col=ff981f>Ring of Time v1.3.0:</col> "
-		+ "Ring order within groups can now be customized with Ctrl+Alt-drag.";
+	static final String UPDATE_MESSAGE = "<col=ff981f>Ring of Time v1.3.0:</col><br>"
+		+ "- Ring order within groups can now be customized with Ctrl+Alt-drag.<br>"
+		+ "- Improved compatibility with Custom UI Anchors.";
 	static final long UPDATE_MESSAGE_DELAY_SECONDS = 3L;
 	private static final String LAST_SEEN_UPDATE_VERSION_KEY = "lastSeenUpdateVersion";
 	private static final String RESURRECT_THRALL_MESSAGE_START = ">You resurrect a ";
