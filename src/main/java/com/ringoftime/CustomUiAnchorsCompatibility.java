@@ -21,11 +21,12 @@ final class CustomUiAnchorsCompatibility
 	private static final Type INTEGER_MAP_TYPE = new TypeToken<Map<String, Integer>>() { }.getType();
 
 	private final ConfigManager configManager;
-	private final Gson gson = new Gson();
+	private final Gson gson;
 
-	CustomUiAnchorsCompatibility(ConfigManager configManager)
+	CustomUiAnchorsCompatibility(ConfigManager configManager, Gson gson)
 	{
 		this.configManager = configManager;
+		this.gson = gson;
 	}
 
 	void reconcile(Collection<TimerGroupOverlay> groups)

@@ -1,5 +1,6 @@
 package com.ringoftime;
 
+import com.google.gson.Gson;
 import java.awt.Dimension;
 import java.awt.Point;
 import java.util.ArrayList;
@@ -54,14 +55,15 @@ final class TimerGroupManager
 		RingOfTimePlugin plugin,
 		RingOfTimeConfig config,
 		OverlayManager overlayManager,
-		ConfigManager configManager)
+		ConfigManager configManager,
+		Gson gson)
 	{
 		this.client = client;
 		this.plugin = plugin;
 		this.config = config;
 		this.overlayManager = overlayManager;
 		this.configManager = configManager;
-		this.customUiAnchorsCompatibility = new CustomUiAnchorsCompatibility(configManager);
+		this.customUiAnchorsCompatibility = new CustomUiAnchorsCompatibility(configManager, gson);
 	}
 
 	void start(Collection<? extends TimerCircleOverlay> timers)

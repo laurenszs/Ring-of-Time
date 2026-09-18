@@ -1,5 +1,6 @@
 package com.ringoftime;
 
+import com.google.gson.Gson;
 import com.google.inject.Provides;
 import com.ringoftime.EffectTimerTracker.Effect;
 import java.awt.Dimension;
@@ -121,6 +122,9 @@ public class RingOfTimePlugin extends Plugin
 	private ConfigManager configManager;
 
 	@Inject
+	private Gson gson;
+
+	@Inject
 	private SkillIconManager skillIconManager;
 
 	@Inject
@@ -191,7 +195,8 @@ public class RingOfTimePlugin extends Plugin
 			this,
 			config,
 			overlayManager,
-			configManager
+			configManager,
+			gson
 		);
 		groupManager.start(timers);
 		groupReorderInput = new TimerGroupReorderInput(client, groupManager);
